@@ -24,6 +24,11 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .bm-table td[data-col="select"] { width: 42px; min-width: 42px; padding-left: 8px; padding-right: 8px; }
 .bm-table input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: #11b886; cursor: pointer; vertical-align: middle; }
 .bm-table input[type="checkbox"]:focus-visible { outline: 2px solid #11b886; outline-offset: 2px; }
+.personal-table { min-width: 2600px; }
+.personal-table th, .personal-table td { min-width: 118px; }
+.personal-table th:nth-child(2), .personal-table td:nth-child(2) { min-width: 220px; text-align: left; }
+.personal-table th:nth-child(9), .personal-table td:nth-child(9),
+.personal-table th:nth-child(13), .personal-table td:nth-child(13) { min-width: 190px; }
 </style>
 </head>
 <body>
@@ -35,10 +40,11 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   
 </aside>
 <main class="main">
-  <div class="top-tabs"><button class="tab">TK Cá nhân</button><button class="tab active">TK BM</button><button class="tab">Page</button></div>
+  <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
   <div class="toolbar"><button class="tool primary" id="reloadBtn">▣ &nbsp; Tải tài khoản</button><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
-  <div class="content"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
-  <div class="footer"><div><strong id="count">0</strong> Tài khoản BM</div></div>
+  <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
+  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th>TT</th><th>Tài khoản</th><th>ID gốc</th><th>Số dư</th><th>Ngưỡng</th><th>Ngưỡng còn lại</th><th>Limit</th><th>Tổng tiêu</th><th>Ghi chú</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
+  <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div></div>
 </main>
 </div>
 <div id="drawer" class="detail-drawer"></div>
@@ -47,13 +53,19 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   const params = new URLSearchParams(location.search);
   const extensionId = params.get('extensionId') || localStorage.getItem('bm-extension-id') || '';
   if (extensionId) localStorage.setItem('bm-extension-id', extensionId);
-  const body = document.getElementById('tableBody');  const columnStorageKey='bm-control-column-order-v1';
+  const body = document.getElementById('tableBody');
+  const personalBody = document.getElementById('personalBody');
+  const personalView = document.getElementById('personalView');
+  const bmView = document.getElementById('bmView');
+  const personalNotice = document.getElementById('personalNotice');
+  const countLabel = document.getElementById('countLabel');
+  const columnStorageKey='bm-control-column-order-v1';
   const defaultColumnOrder=['select','status','name','type','ownership','limit','verified','created','admins','accounts','root'];
   let columnOrder=(()=>{try{const v=JSON.parse(localStorage.getItem(columnStorageKey)||'null');return Array.isArray(v)&&v.length===defaultColumnOrder.length?v:defaultColumnOrder.slice();}catch{return defaultColumnOrder.slice();}})();
   const applyColumnOrder=()=>{const table=document.querySelector('.bm-table');if(!table)return;[table.tHead,...table.tBodies].forEach(section=>Array.from(section.rows).forEach(row=>{const cells=Array.from(row.children);columnOrder.forEach(key=>{const cell=cells.find(x=>x.dataset.col===key);if(cell)row.appendChild(cell);});}));};
   const setupColumnDrag=()=>{const table=document.querySelector('.bm-table');if(!table)return;const headers=table.querySelectorAll('th[data-col]');headers.forEach(th=>{th.draggable=false;if(th.dataset.col==='select')return;const handle=document.createElement('span');handle.className='drag-handle';handle.textContent='⋮⋮';handle.title='Kéo để di chuyển cột';handle.draggable=true;th.prepend(handle);handle.addEventListener('dragstart',e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',th.dataset.col);th.classList.add('dragging');table.classList.add('is-dragging');});handle.addEventListener('dragend',()=>{th.classList.remove('dragging');table.classList.remove('is-dragging');headers.forEach(x=>x.classList.remove('drag-over'));});th.addEventListener('dragover',e=>{if(!table.classList.contains('is-dragging'))return;e.preventDefault();e.dataTransfer.dropEffect='move';headers.forEach(x=>x.classList.remove('drag-over'));th.classList.add('drag-over');});th.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain'),to=th.dataset.col;if(!from||from===to)return;const next=columnOrder.filter(x=>x!==from);const targetIndex=next.indexOf(to);next.splice(targetIndex<0?next.length:targetIndex,0,from);columnOrder=next;localStorage.setItem(columnStorageKey,JSON.stringify(columnOrder));applyColumnOrder();headers.forEach(x=>x.classList.remove('drag-over'));});});applyColumnOrder();};
   const resetColumnOrder=()=>{columnOrder=defaultColumnOrder.slice();localStorage.removeItem(columnStorageKey);applyColumnOrder();};
- const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); let businesses=[];
+ const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); let businesses=[]; let personalAccounts=[]; let activeTab='bm';
   const esc = (v) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const send = (action,payload={}) => new Promise((resolve,reject)=>{ if(!extensionId)return reject(new Error('Hãy mở website bằng nút Trang chủ trong extension.')); chrome.runtime.sendMessage(extensionId,{source:'BM_DASHBOARD',action,requestId:crypto.randomUUID(),...payload},response=>{ if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message)); if(!response)return reject(new Error('Extension không trả về dữ liệu.')); resolve(response); }); });
   const arrCount = x => Array.isArray(x?.data)?x.data.length:(Array.isArray(x)?x.length:0);
@@ -156,10 +168,109 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       : `Đã kiểm tra ${businesses.length}/${businesses.length} BM`);
   }
 
+  const personalValue = (account, key) => {
+    const value = account?.[key];
+    if (value === undefined || value === null || value === '') return '—';
+    if (typeof value === 'object') return value.id || value.name || value.display_string || '—';
+    return value;
+  };
+  const personalMoney = value => {
+    if (value === undefined || value === null || value === '') return '—';
+    if (typeof value === 'object') return value.amount ?? value.value ?? '—';
+    return value;
+  };
+  const personalThreshold = account => personalMoney(account?.adspaymentcycle?.threshold_amount);
+  const personalThresholdRemaining = account => {
+    const threshold = Number(personalThreshold(account));
+    const balance = Number(account?.balance);
+    return Number.isFinite(threshold) && Number.isFinite(balance)
+      ? String(Math.max(0, threshold - balance))
+      : '—';
+  };
+  const personalSpend = account => personalMoney(account?.amount_spent ?? account?.insights?.data?.[0]?.spend ?? account?.insights?.spend);
+  const personalPayment = account => {
+    const payment = account?.all_payment_methods || {};
+    const card = payment.pm_credit_card?.display_string;
+    const debit = payment.payment_method_direct_debits?.display_string;
+    const paypal = payment.payment_method_paypal?.email_address;
+    return card || debit || paypal || '—';
+  };
+  const personalDaysToBill = account => {
+    if (!account?.next_bill_date) return '—';
+    const days = Math.ceil((new Date(account.next_bill_date).getTime() - Date.now()) / 86400000);
+    return Number.isFinite(days) ? String(Math.max(0, days)) : '—';
+  };
+  const renderPersonal = () => {
+    const query = search.value.trim().toLowerCase();
+    const rows = personalAccounts.filter(a =>
+      String(a.name || '').toLowerCase().includes(query) ||
+      String(a.account_id || '').includes(query)
+    );
+    count.textContent = rows.length;
+    countLabel.textContent = 'Tài khoản cá nhân';
+    personalBody.innerHTML = rows.map((account, index) => `<tr>
+      <td>${index + 1}</td>
+      <td class="name"><div class="name-main">${esc(personalValue(account, 'name'))}</div></td>
+      <td>${esc(personalValue(account, 'account_id'))}</td>
+      <td>${esc(personalMoney(account.balance))}</td>
+      <td>${esc(personalThreshold(account))}</td>
+      <td>${esc(personalThresholdRemaining(account))}</td>
+      <td>${esc(personalValue(account, 'adtrust_dsl'))}</td>
+      <td>${esc(personalSpend(account))}</td>
+      <td>${esc(account.__detailError || personalValue(account, 'disable_reason'))}</td>
+      <td>${esc(personalValue(account, 'currency'))}</td>
+      <td>${esc(personalValue(account, 'owner'))}</td>
+      <td>${esc(personalMoney(account.spend_cap))}</td>
+      <td>${esc(personalPayment(account))}</td>
+      <td>${esc(date(account.next_bill_date))}</td>
+      <td>${esc(personalDaysToBill(account))}</td>
+      <td>${esc(personalValue(account, 'disable_reason'))}</td>
+      <td>${esc(date(account.created_time))}</td>
+      <td>${esc(account.is_prepay_account ? 'Prepay' : 'Postpay')}</td>
+      <td>${esc(personalValue(account, 'timezone_name'))}</td>
+      <td>${esc(personalValue(account, 'owner_business'))}</td>
+      <td>${esc(personalValue(account, 'business_country_code'))}</td>
+    </tr>`).join('');
+  };
+  async function loadPersonal() {
+    personalNotice.innerHTML = '<div class="loading">Đang tải danh sách và thông tin TKQC cá nhân...</div>';
+    personalBody.innerHTML = '';
+    try {
+      const ping = await send('PING');
+      if (!ping.success) throw new Error(ping.error);
+      const session = await send('CHECK_SESSION');
+      if (!session.success) throw new Error(session.error);
+      const response = await send('LOAD_PERSONAL_ACCOUNTS');
+      if (!response.success) throw new Error(response.error);
+      personalAccounts = response.data?.accounts || [];
+      personalNotice.innerHTML = personalAccounts.length ? '' : '<div class="empty">Chưa có TKQC cá nhân.</div>';
+      renderPersonal();
+    } catch (error) {
+      personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
+    }
+  }
+  const switchTab = tab => {
+    activeTab = tab;
+    const isPersonal = tab === 'personal';
+    personalView.style.display = isPersonal ? 'flex' : 'none';
+    bmView.style.display = isPersonal ? 'none' : 'flex';
+    document.getElementById('personalTab').classList.toggle('active', isPersonal);
+    document.getElementById('bmTab').classList.toggle('active', !isPersonal);
+    countLabel.textContent = isPersonal ? 'Tài khoản cá nhân' : 'Tài khoản BM';
+    if (isPersonal && !personalAccounts.length) loadPersonal();
+    else if (isPersonal) renderPersonal();
+    else render();
+  };
+  document.getElementById('personalTab').onclick = () => switchTab('personal');
+  document.getElementById('bmTab').onclick = () => switchTab('bm');
+  document.getElementById('pageTab').onclick = () => alert('Chức năng Page sẽ được bổ sung sau.');
   setupColumnDrag();
   document.querySelectorAll('.sort-btn').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.sort;if(key==='status'){statusFilter=statusFilter==='Live'?'Restricted':statusFilter==='Restricted'?'':'Live';sortKey='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));if(statusFilter)btn.classList.add('active');}else{if(sortKey===key)sortDirection*=-1;else{sortKey=key;sortDirection=1;}statusFilter='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}render();});
   async function load(){showNotice('loading','Đang kết nối extension và tải danh sách BM...');body.innerHTML='';try{const p=await send('PING');if(!p.success)throw new Error(p.error);const s=await send('CHECK_SESSION');if(!s.success)throw new Error(s.error);const r=await send('LOAD_BM');if(!r.success)throw new Error(r.error);businesses=r.data?.businesses||[];notice.innerHTML=businesses.length?'':'<div class="empty">Chưa có dữ liệu BM.</div>';render();if(businesses.length)await autoCheckAll();}catch(e){showNotice('error',e.message||'Không thể tải BM.');}}
-  document.getElementById('reloadBtn').onclick=load; search.oninput=render; document.getElementById('clearSearch').onclick=()=>{search.value='';render();}; load();
+  document.getElementById('reloadBtn').onclick=()=>activeTab==='personal'?loadPersonal():load();
+  search.oninput=()=>activeTab==='personal'?renderPersonal():render();
+  document.getElementById('clearSearch').onclick=()=>{search.value='';activeTab==='personal'?renderPersonal():render();};
+  load();
 })();
 </script>
 </body>
