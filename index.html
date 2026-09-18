@@ -5,34 +5,120 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BM Control</title>
   <style>
-    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#dbeafe 0,transparent 32%),#f5f7fb}.shell{display:flex;min-height:100vh}.side{width:286px;display:flex;flex-direction:column;padding:24px 20px;border-right:1px solid #e5e7eb;background:rgba(255,255,255,.86);backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:12px;font-weight:700}.logo{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:#020617;color:#93c5fd;font-size:22px;box-shadow:0 10px 24px #0f172a20}.brand small{display:block;margin-top:3px;color:#94a3b8;font-size:11px;font-weight:500}.nav{margin-top:44px}.nav-label{padding:0 12px 10px;color:#94a3b8;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:0;border-radius:12px;background:transparent;color:#94a3b8;text-align:left;font-size:13px}.nav-item.active{background:#020617;color:#fff;box-shadow:0 10px 22px #0f172a18}.privacy{margin-top:auto;padding:16px;border:1px solid #bfdbfe;border-radius:18px;background:linear-gradient(135deg,#eff6ff,#eef2ff);color:#475569;font-size:12px;line-height:1.7}.privacy strong{display:block;margin-bottom:8px;color:#2563eb}.help{margin-top:14px;color:#64748b;font-size:13px}.main{min-width:0;flex:1}.top{display:flex;align-items:center;justify-content:space-between;padding:22px 42px;border-bottom:1px solid #e5e7eb;background:#f5f7fbd9;backdrop-filter:blur(18px)}.crumb{color:#64748b;font-size:12px}.title{margin:6px 0 0;font-size:25px;letter-spacing:-.04em}.status{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #fecdd3;border-radius:999px;background:#fff1f2;color:#be123c;font-size:12px}.dot{width:7px;height:7px;border-radius:50%;background:#f43f5e}.content{max-width:1120px;margin:auto;padding:32px 42px}.hero{display:flex;justify-content:space-between;gap:24px;padding:36px;border-radius:28px;background:#020617;color:#fff;box-shadow:0 22px 48px #0f172a22}.eyebrow{display:inline-flex;padding:6px 10px;border-radius:999px;background:#60a5fa22;color:#bfdbfe;font-size:12px}.hero h2{margin:18px 0 0;font-size:42px;line-height:1.06;letter-spacing:-.05em}.hero h2 span{color:#93c5fd}.hero p{max-width:650px;margin:18px 0 0;color:#cbd5e1;font-size:14px;line-height:1.7}.hero-icon{display:grid;place-items:center;width:64px;height:64px;flex:0 0 auto;border-radius:18px;background:#fff1}.panel{margin-top:22px;padding:26px;border:1px solid #e2e8f0;border-radius:22px;background:#fffffff0;box-shadow:0 12px 30px #94a3b81a}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.panel h3{margin:0;font-size:18px}.muted{margin:7px 0 0;color:#64748b;font-size:13px;line-height:1.6}.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border:0;border-radius:11px;background:#020617;color:#fff;font-weight:700;cursor:pointer}.btn:disabled{cursor:wait;opacity:.6}.btn.secondary{border:1px solid #cbd5e1;background:#fff;color:#334155}.loading,.error,.empty{margin-top:20px;padding:18px;border-radius:14px;font-size:13px}.loading{background:#eff6ff;color:#1d4ed8}.error{background:#fff1f2;color:#be123c}.empty{background:#f8fafc;color:#64748b}.bm-list{display:grid;gap:10px;margin-top:20px}.bm{display:flex;align-items:center;gap:14px;width:100%;padding:15px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;text-align:left;cursor:pointer}.bm:hover,.bm.selected{border-color:#60a5fa;background:#eff6ff}.bm-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#dbeafe;color:#2563eb}.bm-info{min-width:0;flex:1}.bm-name{font-size:14px;font-weight:700}.bm-id{margin-top:4px;color:#94a3b8;font-family:monospace;font-size:11px}.check{color:#2563eb;font-size:20px}.selected-box{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding:15px;border:1px solid #a7f3d0;border-radius:16px;background:#ecfdf5;color:#065f46}.selected-box strong{display:block;margin-top:3px;color:#064e3b}.selected-box small{font-family:monospace;color:#047857}.modal{display:none;position:fixed;inset:0;place-items:center;padding:20px;background:#02061766;z-index:5}.modal.open{display:grid}.modal-card{width:min(460px,100%);padding:24px;border-radius:20px;background:#fff;box-shadow:0 24px 60px #0f172a33}.modal-card h3{margin:0}.modal-card p{color:#64748b;font-size:13px;line-height:1.6}.modal-card input{width:100%;height:42px;padding:0 12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}@media(max-width:800px){.side{display:none}.top{padding:18px 20px}.content{padding:20px}.hero{padding:25px}.hero h2{font-size:32px}.status{display:none}}
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#0f172a;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,#dbeafe 0,transparent 32%),#f5f7fb}.shell{display:flex;min-height:100vh}.side{width:286px;display:flex;flex-direction:column;padding:24px 20px;border-right:1px solid #e5e7eb;background:rgba(255,255,255,.86);backdrop-filter:blur(18px)}.brand{display:flex;align-items:center;gap:12px;font-weight:700}.logo{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:#020617;color:#93c5fd;font-size:22px;box-shadow:0 10px 24px #0f172a20}.brand small{display:block;margin-top:3px;color:#94a3b8;font-size:11px;font-weight:500}.nav{margin-top:44px}.nav-label{padding:0 12px 10px;color:#94a3b8;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border:0;border-radius:12px;background:transparent;color:#94a3b8;text-align:left;font-size:13px}.nav-item.active{background:#020617;color:#fff;box-shadow:0 10px 22px #0f172a18}.privacy{margin-top:auto;padding:16px;border:1px solid #bfdbfe;border-radius:18px;background:linear-gradient(135deg,#eff6ff,#eef2ff);color:#475569;font-size:12px;line-height:1.7}.privacy strong{display:block;margin-bottom:8px;color:#2563eb}.help{margin-top:14px;color:#64748b;font-size:13px}.main{min-width:0;flex:1}.top{display:flex;align-items:center;justify-content:space-between;padding:22px 42px;border-bottom:1px solid #e5e7eb;background:#f5f7fbd9;backdrop-filter:blur(18px)}.crumb{color:#64748b;font-size:12px}.title{margin:6px 0 0;font-size:25px;letter-spacing:-.04em}.status{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #fecdd3;border-radius:999px;background:#fff1f2;color:#be123c;font-size:12px}.dot{width:7px;height:7px;border-radius:50%;background:#f43f5e}.content{max-width:1440px;margin:auto;padding:32px 42px}.hero{display:flex;justify-content:space-between;gap:24px;padding:36px;border-radius:28px;background:#020617;color:#fff;box-shadow:0 22px 48px #0f172a22}.eyebrow{display:inline-flex;padding:6px 10px;border-radius:999px;background:#60a5fa22;color:#bfdbfe;font-size:12px}.hero h2{margin:18px 0 0;font-size:42px;line-height:1.06;letter-spacing:-.05em}.hero h2 span{color:#93c5fd}.hero p{max-width:650px;margin:18px 0 0;color:#cbd5e1;font-size:14px;line-height:1.7}.hero-icon{display:grid;place-items:center;width:64px;height:64px;flex:0 0 auto;border-radius:18px;background:#fff1}.panel{margin-top:22px;padding:26px;border:1px solid #e2e8f0;border-radius:22px;background:#fffffff0;box-shadow:0 12px 30px #94a3b81a}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.panel h3{margin:0;font-size:18px}.muted{margin:7px 0 0;color:#64748b;font-size:13px;line-height:1.6}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border:0;border-radius:11px;background:#020617;color:#fff;font-weight:700;cursor:pointer}.btn:hover{background:#1e293b}.btn:disabled{cursor:wait;opacity:.6}.btn.secondary{border:1px solid #cbd5e1;background:#fff;color:#334155}.btn.small{padding:8px 11px;font-size:12px}.loading,.error,.empty{margin-top:20px;padding:18px;border-radius:14px;font-size:13px}.loading{background:#eff6ff;color:#1d4ed8}.error{background:#fff1f2;color:#be123c}.empty{background:#f8fafc;color:#64748b}.table-wrap{margin-top:20px;overflow:auto;border:1px solid #e2e8f0;border-radius:16px;background:#fff}.bm-table{width:100%;min-width:1050px;border-collapse:collapse;font-size:12px}.bm-table th{padding:13px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;color:#64748b;text-align:left;font-size:11px;white-space:nowrap}.bm-table td{padding:13px 12px;border-bottom:1px solid #eef2f7;vertical-align:middle;white-space:nowrap}.bm-table tr:last-child td{border-bottom:0}.bm-table tr:hover td{background:#f8fbff}.bm-name{font-weight:700;color:#0f172a;white-space:normal;min-width:190px}.bm-id{margin-top:4px;color:#94a3b8;font-family:monospace;font-size:11px}.state{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:700}.state.pending{background:#f1f5f9;color:#64748b}.state.live{background:#ecfdf5;color:#047857}.state.restricted{background:#fff1f2;color:#be123c}.state.verified{background:#ecfdf5;color:#047857}.state.unverified{background:#fff7ed;color:#c2410c}.details{display:none;margin-top:20px;padding:20px;border:1px solid #bfdbfe;border-radius:18px;background:#eff6ff}.details.open{display:block}.details-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.details h3{margin:0;font-size:16px}.details-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}.metric{padding:13px;border:1px solid #dbeafe;border-radius:12px;background:#fff}.metric-label{color:#64748b;font-size:11px}.metric-value{margin-top:6px;font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis}.subtable{width:100%;margin-top:16px;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}.subtable th,.subtable td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:12px}.subtable th{color:#64748b;background:#f8fafc}.nowrap{white-space:nowrap}@media(max-width:950px){.side{display:none}.top{padding:18px 20px}.content{padding:20px}.hero{padding:25px}.hero h2{font-size:32px}.status{display:none}.details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
-  <div class="shell"><aside class="side"><div class="brand"><div class="logo">⚡</div><div>BM Control<small>Personal workspace</small></div></div><nav class="nav"><div class="nav-label">Workspace</div><button class="nav-item active">▦ <span>Load Business Manager</span></button><button class="nav-item" disabled>▤ <span>Chức năng khác</span></button></nav><div class="privacy"><strong>◈ Local-first</strong>Cookie và phiên Facebook vẫn ở trong trình duyệt. Dashboard chỉ điều phối qua extension.</div><div class="help">? &nbsp; Hướng dẫn kết nối</div></aside><main class="main"><header class="top"><div><div class="crumb">BM Control / Business Manager</div><h1 class="title">Business Manager của bạn</h1></div><div class="status"><span class="dot"></span><span id="statusText">Đang kết nối</span></div></header><div class="content"><section class="hero"><div><span class="eyebrow">▥ &nbsp; Business context</span><h2>Chọn Business Manager<br><span>để bắt đầu thao tác.</span></h2><p>Extension sẽ tự xác định phiên Facebook và lấy danh sách BM. Bạn không cần tự mở từng trang Facebook trước.</p></div><div class="hero-icon">▥</div></section><section class="panel"><div class="panel-head"><div><h3>Danh sách Business Manager</h3><p class="muted">Chọn một BM để làm ngữ cảnh cho các chức năng tiếp theo.</p></div><button class="btn" id="reloadBtn">↻ &nbsp; Tải lại</button></div><div id="result"></div><div id="bmList" class="bm-list"></div><div id="selected" class="selected-box" style="display:none"></div></section></div></main></div><div class="modal" id="settings"><div class="modal-card"><h3>Cấu hình bridge</h3><p>Thông thường extension tự truyền ID khi mở Trang chủ. Chỉ dùng ô này khi bạn mở website trực tiếp.</p><input id="extensionInput" placeholder="Extension ID"/><div class="modal-actions"><button class="btn secondary" id="closeSettings">Đóng</button><button class="btn" id="saveSettings">Lưu và thử lại</button></div></div></div>
-<script>
-(() => {
-  const params = new URLSearchParams(location.search);
-  const extensionId = params.get("extensionId") || localStorage.getItem("bm-extension-id") || "";
-  if (extensionId) localStorage.setItem("bm-extension-id", extensionId);
-  const result = document.getElementById("result");
-  const list = document.getElementById("bmList");
-  const selected = document.getElementById("selected");
-  const statusText = document.getElementById("statusText");
-  const setStatus = (text) => statusText.textContent = text;
-  const showError = (message) => { result.innerHTML = '<div class="error">⚠ ' + message + '</div>'; setStatus("Cần kiểm tra"); };
-  const send = (action) => new Promise((resolve, reject) => {
-    if (!extensionId) return reject(new Error("Hãy mở website bằng nút Trang chủ trong extension."));
-    if (!window.chrome?.runtime?.sendMessage) return reject(new Error("Chrome chưa cho phép website giao tiếp với extension."));
-    chrome.runtime.sendMessage(extensionId, { source: "BM_DASHBOARD", action, requestId: crypto.randomUUID() }, response => {
-      const runtimeError = chrome.runtime.lastError;
-      if (runtimeError) return reject(new Error(runtimeError.message));
-      if (!response) return reject(new Error("Extension không trả về dữ liệu."));
-      resolve(response);
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><div class="logo">⚡</div><div>BM Control<small>Personal workspace</small></div></div>
+      <nav class="nav"><div class="nav-label">Workspace</div><button class="nav-item active">▦ <span>Load Business Manager</span></button><button class="nav-item" disabled>▤ <span>Chức năng khác</span></button></nav>
+      <div class="privacy"><strong>◈ Local-first</strong>Cookie và phiên Facebook vẫn ở trong trình duyệt. Dashboard chỉ điều phối qua extension.</div>
+      <div class="help">? &nbsp; Hướng dẫn kết nối</div>
+    </aside>
+    <main class="main">
+      <header class="top"><div><div class="crumb">BM Control / Business Manager</div><h1 class="title">Business Manager của bạn</h1></div><div class="status"><span class="dot"></span><span id="statusText">Đang kết nối</span></div></header>
+      <div class="content">
+        <section class="hero"><div><span class="eyebrow">▥ &nbsp; Business context</span><h2>Kiểm tra Business Manager<br><span>theo từng tài khoản.</span></h2><p>Load danh sách BM trước, sau đó kiểm tra riêng từng BM bằng ID đã chọn. Kết quả chi tiết được trả về từ extension.</p></div><div class="hero-icon">▥</div></section>
+        <section class="panel">
+          <div class="panel-head"><div><h3>Danh sách Business Manager</h3><p class="muted">Bấm “Kiểm tra” trên từng dòng để lấy trạng thái và số liệu chi tiết.</p></div><button class="btn" id="reloadBtn">↻ &nbsp; Tải lại</button></div>
+          <div id="result"></div>
+          <div class="table-wrap"><table class="bm-table"><thead><tr><th>Trạng thái</th><th>Tên BM / ID</th><th>Verified</th><th>Created</th><th>Admin</th><th>Ad account</th><th>Quyền / Limit</th><th>Thao tác</th></tr></thead><tbody id="bmTableBody"></tbody></table></div>
+          <div id="details" class="details"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script>
+  (() => {
+    const params = new URLSearchParams(location.search);
+    const extensionId = params.get("extensionId") || localStorage.getItem("bm-extension-id") || "";
+    if (extensionId) localStorage.setItem("bm-extension-id", extensionId);
+
+    const result = document.getElementById("result");
+    const body = document.getElementById("bmTableBody");
+    const details = document.getElementById("details");
+    const statusText = document.getElementById("statusText");
+    let businesses = [];
+
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[char]));
+    const setStatus = (text) => { statusText.textContent = text; };
+    const showError = (message) => { result.innerHTML = '<div class="error">⚠ ' + escapeHtml(message) + '</div>'; setStatus("Cần kiểm tra"); };
+    const formatDate = (value) => { if (!value) return "—"; const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value).slice(0,10) : date.toISOString().slice(0,10); };
+    const countItems = (value) => Array.isArray(value?.data) ? value.data.length : (Array.isArray(value) ? value.length : 0);
+    const verifiedClass = (value) => String(value || "").toLowerCase().includes("verified") && !String(value || "").toLowerCase().includes("not") ? "verified" : "unverified";
+    const statusInfo = (item) => { if (item.is_disabled_for_integrity_reasons) return ["Restricted", "restricted"]; return ["Live", "live"]; };
+
+    const send = (action, payload = {}) => new Promise((resolve, reject) => {
+      if (!extensionId) return reject(new Error("Hãy mở website bằng nút Trang chủ trong extension."));
+      if (!window.chrome?.runtime?.sendMessage) return reject(new Error("Chrome chưa cho phép website giao tiếp với extension."));
+      const request = { source: "BM_DASHBOARD", action, requestId: crypto.randomUUID(), ...payload };
+      chrome.runtime.sendMessage(extensionId, request, (response) => {
+        const runtimeError = chrome.runtime.lastError;
+        if (runtimeError) return reject(new Error(runtimeError.message));
+        if (!response) return reject(new Error("Extension không trả về dữ liệu."));
+        resolve(response);
+      });
     });
-  });
-  const render = (businesses) => { list.innerHTML = businesses.map(b => '<button class="bm" data-id="'+b.id+'" data-name="'+String(b.name).replace(/"/g,'&quot;')+'"><div class="bm-icon">▥</div><div class="bm-info"><div class="bm-name">'+b.name+'</div><div class="bm-id">'+b.id+(b.role ? ' · '+b.role : '')+'</div></div><span class="check">›</span></button>').join(''); list.querySelectorAll('.bm').forEach(button => button.onclick = () => { document.querySelectorAll('.bm').forEach(x => x.classList.remove('selected')); button.classList.add('selected'); selected.style.display='flex'; selected.innerHTML='<div>Đang làm việc với<strong>'+button.dataset.name+'</strong><small>'+button.dataset.id+'</small></div><span>✓</span>'; }); };
-  async function load() { setStatus("Đang kết nối"); result.innerHTML='<div class="loading">Đang tự động kết nối extension, xác định phiên Facebook và load BM...</div>'; list.innerHTML=''; selected.style.display='none'; try { const ping=await send('PING'); if(!ping.success) throw new Error(ping.error||'Extension chưa sẵn sàng.'); const session=await send('CHECK_SESSION'); if(!session.success) throw new Error(session.error||'Không tìm thấy phiên Facebook.'); const response=await send('LOAD_BM'); if(!response.success) throw new Error(response.error||'Không thể load Business Manager.'); const businesses=response.data?.businesses || []; result.innerHTML=businesses.length ? '' : '<div class="empty">Extension đã kết nối nhưng chưa trả về Business Manager.</div>'; render(businesses); setStatus("Đã kết nối"); } catch(error) { showError(error.message || 'Không thể kết nối extension.'); } }
-  document.getElementById('reloadBtn').onclick = load; load();
-})();
-</script></body></html>
+
+    const renderDetails = (business) => {
+      const owned = business.owned_ad_accounts || {};
+      const client = business.client_ad_accounts || {};
+      const users = business.business_users || {};
+      const ownedRows = Array.isArray(owned.data) ? owned.data : [];
+      const clientRows = Array.isArray(client.data) ? client.data : [];
+      details.innerHTML = '<div class="details-head"><div><h3>Chi tiết BM: ' + escapeHtml(business.name || business.id) + '</h3><p class="muted">ID: ' + escapeHtml(business.id) + '</p></div><button class="btn secondary small" id="closeDetails">Đóng</button></div><div class="details-grid"><div class="metric"><div class="metric-label">Trạng thái xác minh</div><div class="metric-value">' + escapeHtml(business.verification_status || "—") + '</div></div><div class="metric"><div class="metric-label">Ngày tạo</div><div class="metric-value">' + escapeHtml(formatDate(business.created_time)) + '</div></div><div class="metric"><div class="metric-label">Business users</div><div class="metric-value">' + countItems(users) + '</div></div><div class="metric"><div class="metric-label">Sharing eligibility</div><div class="metric-value">' + escapeHtml(business.sharing_eligibility_status || "—") + '</div></div><div class="metric"><div class="metric-label">Owned ad accounts</div><div class="metric-value">' + countItems(owned) + '</div></div><div class="metric"><div class="metric-label">Client ad accounts</div><div class="metric-value">' + countItems(client) + '</div></div></div>' + (ownedRows.length ? '<table class="subtable"><thead><tr><th>Owned Ad Account</th><th>Currency</th><th>Status</th><th>Adtrust DSL</th></tr></thead><tbody>' + ownedRows.map((ad) => '<tr><td>' + escapeHtml(ad.name || ad.id || "—") + '</td><td>' + escapeHtml(ad.currency || "—") + '</td><td>' + escapeHtml(ad.account_status ?? "—") + '</td><td>' + escapeHtml(ad.adtrust_dsl ?? "—") + '</td></tr>').join('') + '</tbody></table>' : '') + '<button class="btn secondary small" id="closeDetailsBottom" style="margin-top:14px">Đóng chi tiết</button>';
+      details.classList.add("open");
+      document.getElementById("closeDetails").onclick = () => details.classList.remove("open");
+      document.getElementById("closeDetailsBottom").onclick = () => details.classList.remove("open");
+      details.scrollIntoView({behavior:"smooth", block:"nearest"});
+    };
+
+    const checkBusiness = async (business, button) => {
+      button.disabled = true; button.textContent = "Đang kiểm tra...";
+      const row = button.closest("tr");
+      const stateCell = row.querySelector("[data-col='state']");
+      stateCell.innerHTML = '<span class="state pending">Checking</span>';
+      try {
+        const response = await send("CHECK_BM", { businessId: business.id });
+        if (!response.success) throw new Error(response.error || "Kiểm tra BM thất bại.");
+        const checked = response.data?.business || {};
+        Object.assign(business, checked);
+        renderTable();
+        renderDetails(checked);
+        setStatus("Đã kiểm tra " + (checked.name || business.name));
+      } catch (error) {
+        stateCell.innerHTML = '<span class="state restricted">Lỗi</span>';
+        button.disabled = false; button.textContent = "Kiểm tra";
+        result.innerHTML = '<div class="error">⚠ ' + escapeHtml(error.message || "Kiểm tra BM thất bại.") + '</div>';
+        setStatus("Cần kiểm tra");
+      }
+    };
+
+    const renderTable = () => {
+      body.innerHTML = businesses.map((business, index) => {
+        const [state, stateClass] = statusInfo(business);
+        const verified = business.verification_status || "—";
+        return '<tr><td data-col="state"><span class="state ' + stateClass + '">' + state + '</span></td><td><div class="bm-name">' + escapeHtml(business.name || "Không có tên") + '</div><div class="bm-id">' + escapeHtml(business.id) + '</div></td><td><span class="state ' + verifiedClass(verified) + '">' + escapeHtml(verified) + '</span></td><td>' + escapeHtml(formatDate(business.created_time)) + '</td><td>' + countItems(business.business_users) + '</td><td>' + (countItems(business.owned_ad_accounts) + countItems(business.client_ad_accounts)) + '</td><td>' + escapeHtml(business.sharing_eligibility_status || "—") + '</td><td><button class="btn small check-btn" data-index="' + index + '">Kiểm tra</button></td></tr>';
+      }).join('');
+      body.querySelectorAll(".check-btn").forEach((button) => button.onclick = () => checkBusiness(businesses[Number(button.dataset.index)], button));
+    };
+
+    async function load() {
+      setStatus("Đang kết nối"); result.innerHTML = '<div class="loading">Đang kết nối extension và load danh sách BM...</div>'; body.innerHTML = ''; details.classList.remove("open");
+      try {
+        const ping = await send("PING"); if (!ping.success) throw new Error(ping.error || "Extension chưa sẵn sàng.");
+        const session = await send("CHECK_SESSION"); if (!session.success) throw new Error(session.error || "Không tìm thấy phiên Facebook.");
+        const response = await send("LOAD_BM"); if (!response.success) throw new Error(response.error || "Không thể load Business Manager.");
+        businesses = response.data?.businesses || [];
+        result.innerHTML = businesses.length ? '' : '<div class="empty">Extension đã kết nối nhưng chưa trả về Business Manager.</div>';
+        renderTable(); setStatus("Đã kết nối");
+      } catch (error) { showError(error.message || "Không thể kết nối extension."); }
+    }
+
+    document.getElementById("reloadBtn").onclick = load;
+    load();
+  })();
+  </script>
+</body>
+</html>
