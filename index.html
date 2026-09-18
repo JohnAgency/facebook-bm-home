@@ -94,7 +94,68 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     render();
   });
     const showDetails=b=>{const owned=Array.isArray(b.owned_ad_accounts?.data)?b.owned_ad_accounts.data:[];drawer.innerHTML=`<div class="detail-head"><div><h3>${esc(b.name||'Business Manager')}</h3><small>${esc(b.id)}</small></div><button class="close" id="close">×</button></div><div class="metrics"><div class="metric"><label>Trạng thái</label><b>${esc(status(b)[0])}</b></div><div class="metric"><label>Verified</label><b>${esc(b.verification_status)}</b></div><div class="metric"><label>Created</label><b>${esc(date(b.created_time))}</b></div><div class="metric"><label>Business users</label><b>${arrCount(b.business_users)}</b></div><div class="metric"><label>Owned ad accounts</label><b>${arrCount(b.owned_ad_accounts)}</b></div><div class="metric"><label>Client ad accounts</label><b>${arrCount(b.client_ad_accounts)}</b></div></div>${owned.length?`<div class="sub-title">Owned Ad Accounts</div><table class="mini"><thead><tr><th>ID</th><th>Currency</th><th>Status</th><th>Adtrust DSL</th></tr></thead><tbody>${owned.map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(a.currency)}</td><td>${esc(a.account_status)}</td><td>${esc(a.adtrust_dsl)}</td></tr>`).join('')}</tbody></table>`:''}`;drawer.classList.add('open');document.getElementById('close').onclick=()=>drawer.classList.remove('open');};
-  async function autoCheckAll(){const batchSize=50;let completed=0;for(let offset=0;offset<businesses.length;offset+=batchSize){const batch=businesses.slice(offset,offset+batchSize);batch.forEach(b=>{b.__checking=true;});render();showNotice('loading',`Đang kiểm tra BM: ${completed}/${businesses.length} · Lô ${Math.floor(offset/batchSize)+1}`);await Promise.all(batch.map(async business=>{try{const r=await send('CHECK_BM',{businessId:business.id});if(r.success){Object.assign(business,r.data?.business||{});business.__checked=true;}else{business.__checkError=r.error||'Kiểm tra thất bại';}}catch(error){business.__checkError=error.message||'Kiểm tra thất bại';}finally{business.__checking=false;completed++;}}));render();showNotice('loading',`Đã kiểm tra ${completed}/${businesses.length} BM`);}}
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const isRetryableMessage = message => {
+    const text = String(message || '').toLowerCase();
+    return !text || text.includes('timeout') || text.includes('network') ||
+      text.includes('receiving end') || text.includes('no response') ||
+      text.includes('rate') || text.includes('429') || text.includes('502') ||
+      text.includes('503') || text.includes('504') || text.includes('limit endpoint') ||
+      text.includes('chưa nhận được limit');
+  };
+  async function checkOneWithRetry(business, maxAttempts = 3) {
+    let lastError = 'Kiểm tra thất bại';
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const response = await send('CHECK_BM', { businessId: business.id });
+        if (response?.success) {
+          const checked = response.data?.business || {};
+          Object.assign(business, checked);
+          business.__checked = true;
+          business.__checkError = '';
+          if (String(business.adAccountLimit ?? '').trim() !== '_') return true;
+          lastError = 'Chưa nhận được Limit';
+        } else {
+          lastError = response?.error || 'Kiểm tra thất bại';
+        }
+      } catch (error) {
+        lastError = error.message || 'Kiểm tra thất bại';
+      }
+      if (attempt < maxAttempts && isRetryableMessage(lastError)) {
+        await wait(700 * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 350));
+      } else if (attempt < maxAttempts) {
+        break;
+      }
+    }
+    business.__checkError = lastError;
+    return false;
+  }
+  async function autoCheckAll(){
+    const batchSize = 50;
+    const concurrency = 10;
+    let completed = 0;
+    for (let offset = 0; offset < businesses.length; offset += batchSize) {
+      const batch = businesses.slice(offset, offset + batchSize);
+      batch.forEach(b => { b.__checking = true; b.__checkError = ''; });
+      render();
+      showNotice('loading', `Đang kiểm tra BM: ${completed}/${businesses.length} · Lô ${Math.floor(offset / batchSize) + 1}`);
+      for (let cursor = 0; cursor < batch.length; cursor += concurrency) {
+        const group = batch.slice(cursor, cursor + concurrency);
+        await Promise.all(group.map(async business => {
+          try { await checkOneWithRetry(business, 3); }
+          finally { business.__checking = false; completed++; }
+        }));
+        render();
+        showNotice('loading', `Đang kiểm tra BM: ${completed}/${businesses.length} · Lô ${Math.floor(offset / batchSize) + 1}`);
+        if (cursor + concurrency < batch.length) await wait(250);
+      }
+    }
+    const failed = businesses.filter(b => b.__checkError).length;
+    showNotice(failed ? 'error' : 'loading', failed
+      ? `Đã kiểm tra ${businesses.length - failed}/${businesses.length}; còn ${failed} BM cần thử lại.`
+      : `Đã kiểm tra ${businesses.length}/${businesses.length} BM`);
+  }
+
   setupColumnDrag();
   document.querySelectorAll('.sort-btn').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.sort;if(key==='status'){statusFilter=statusFilter==='Live'?'Restricted':statusFilter==='Restricted'?'':'Live';sortKey='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));if(statusFilter)btn.classList.add('active');}else{if(sortKey===key)sortDirection*=-1;else{sortKey=key;sortDirection=1;}statusFilter='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}render();});
   async function load(){showNotice('loading','Đang kết nối extension và tải danh sách BM...');body.innerHTML='';try{const p=await send('PING');if(!p.success)throw new Error(p.error);const s=await send('CHECK_SESSION');if(!s.success)throw new Error(s.error);const r=await send('LOAD_BM');if(!r.success)throw new Error(r.error);businesses=r.data?.businesses||[];notice.innerHTML=businesses.length?'':'<div class="empty">Chưa có dữ liệu BM.</div>';render();if(businesses.length)await autoCheckAll();}catch(e){showNotice('error',e.message||'Không thể tải BM.');}}
