@@ -232,35 +232,54 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       <td>${esc(personalValue(account, 'business_country_code'))}</td>
     </tr>`).join('');
   };
+  async function checkPersonalAccountsInBatches() {
+    const batchSize = 50;
+    let completed = 0;
+    for (let offset = 0; offset < personalAccounts.length; offset += batchSize) {
+      const batch = personalAccounts.slice(offset, offset + batchSize);
+      const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
+      batch.forEach(account => { account.__checking = true; account.__detailError = ''; });
+      renderPersonal();
+      personalNotice.innerHTML = `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang kiểm tra ${completed}/${personalAccounts.length} · Lô ${Math.floor(offset / batchSize) + 1}</div>`;
+      try {
+        const response = await send('CHECK_PERSONAL_ACCOUNTS_BATCH', { accountIds });
+        if (!response.success) throw new Error(response.error || 'Check batch TKQC thất bại.');
+        const checked = response.data?.accounts || [];
+        const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
+        batch.forEach(account => {
+          const detail = checkedMap.get(String(account.account_id || account.id));
+          if (detail) Object.assign(account, detail);
+          else account.__detailError = 'Không nhận được dữ liệu chi tiết.';
+          account.__checking = false;
+        });
+      } catch (error) {
+        batch.forEach(account => {
+          account.__checking = false;
+          account.__detailError = error.message || 'Không check được TKQC.';
+        });
+      }
+      completed += batch.length;
+      renderPersonal();
+      personalNotice.innerHTML = `<div class="loading">Đã kiểm tra ${Math.min(completed, personalAccounts.length)}/${personalAccounts.length} TKQC.</div>`;
+    }
+    personalNotice.innerHTML = `<div class="loading">Đã hoàn tất kiểm tra ${personalAccounts.length} TKQC.</div>`;
+  }
   async function loadPersonal() {
-    personalNotice.innerHTML = '<div class="loading">Đang tải danh sách và thông tin TKQC cá nhân...</div>';
+    personalNotice.innerHTML = '<div class="loading">Đang tải danh sách TKQC cá nhân...</div>';
     personalBody.innerHTML = '';
     try {
       const ping = await send('PING');
       if (!ping.success) throw new Error(ping.error);
       const session = await send('CHECK_SESSION');
       if (!session.success) throw new Error(session.error);
-      const response =
-    await send("LOAD_PERSONAL_ACCOUNTS_LIST");
-
-if (!response.success) {
-    throw new Error(response.error);
-}
-
-personalAccounts =
-    response.data?.accounts || [];
-
-personalNotice.innerHTML =
-    personalAccounts.length
-        ? `<div class="loading">
-              Đã tải ${personalAccounts.length} TKQC.
-              Đang kiểm tra chi tiết...
-           </div>`
+      const response = await send('LOAD_PERSONAL_ACCOUNTS_LIST');
+      if (!response.success) throw new Error(response.error);
+      personalAccounts = response.data?.accounts || [];
+      personalNotice.innerHTML = personalAccounts.length
+        ? `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang chuẩn bị kiểm tra...</div>`
         : '<div class="empty">Chưa có TKQC cá nhân.</div>';
-
-renderPersonal();
-
-await checkPersonalAccountsInBatches();
+      renderPersonal();
+      if (personalAccounts.length) await checkPersonalAccountsInBatches();
     } catch (error) {
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
