@@ -240,11 +240,27 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       if (!ping.success) throw new Error(ping.error);
       const session = await send('CHECK_SESSION');
       if (!session.success) throw new Error(session.error);
-      const response = await send('LOAD_PERSONAL_ACCOUNTS');
-      if (!response.success) throw new Error(response.error);
-      personalAccounts = response.data?.accounts || [];
-      personalNotice.innerHTML = personalAccounts.length ? '' : '<div class="empty">Chưa có TKQC cá nhân.</div>';
-      renderPersonal();
+      const response =
+    await send("LOAD_PERSONAL_ACCOUNTS_LIST");
+
+if (!response.success) {
+    throw new Error(response.error);
+}
+
+personalAccounts =
+    response.data?.accounts || [];
+
+personalNotice.innerHTML =
+    personalAccounts.length
+        ? `<div class="loading">
+              Đã tải ${personalAccounts.length} TKQC.
+              Đang kiểm tra chi tiết...
+           </div>`
+        : '<div class="empty">Chưa có TKQC cá nhân.</div>';
+
+renderPersonal();
+
+await checkPersonalAccountsInBatches();
     } catch (error) {
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
