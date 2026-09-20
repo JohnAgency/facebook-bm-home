@@ -368,7 +368,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     renderPersonal();
   });
   async function checkPersonalAccountsInBatches() {
-    const batchSize = 50;
+    const batchSize = 25;
     let completed = 0;
     for (let offset = 0; offset < personalAccounts.length; offset += batchSize) {
       const batch = personalAccounts.slice(offset, offset + batchSize);
@@ -411,9 +411,10 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       if (!response.success) throw new Error(response.error);
       personalAccounts = response.data?.accounts || [];
       personalNotice.innerHTML = personalAccounts.length
-        ? `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang hiển thị Tên và ID.</div>`
+        ? `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang hiển thị Tên và ID, chuẩn bị check theo lô 25...</div>`
         : '<div class="empty">Chưa có TKQC cá nhân.</div>';
       renderPersonal();
+      if (personalAccounts.length) await checkPersonalAccountsInBatches();
     } catch (error) {
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
