@@ -61,6 +61,9 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .personal-table th.personal-drag-over { background:#dff8ef; box-shadow:inset 3px 0 #11b886; }
 .personal-table.is-dragging th { cursor:grabbing; }
 </style>
+<style>
+.bm-row-error { display:block; max-width:190px; margin-top:3px; color:#c24141; font-size:10px; white-space:normal; line-height:1.25; text-align:left; }
+</style>
 </head>
 <body>
 <div class="app">
@@ -178,7 +181,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     prevPage.disabled = (activeTab === 'personal' ? personalPage : bmPage) <= 1;
     nextPage.disabled = (activeTab === 'personal' ? personalPage : bmPage) >= totalPages;
   };
-  const render = () => { const rows=visibleBusinesses(); const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE)); bmPage=Math.min(bmPage,totalPages); const pageRows=rows.slice((bmPage-1)*PAGE_SIZE,bmPage*PAGE_SIZE); count.textContent=rows.length; updatePagination(totalPages); body.innerHTML=pageRows.map((b)=>{const [st,sc]=status(b),[ver,vc]=verified(b);const checking=b.__checking;return `<tr><td data-col="select"><input type="checkbox" class="bm-select" data-bm-id="${esc(b.id)}" aria-label="Chọn BM ${esc(b.name||b.id)}" ${selectedIds.has(String(b.id))?'checked':''}></td><td data-col="status"><span class="pill ${sc}">${checking?'Checking…':st}</span></td><td data-col="name" class="name"><div class="name-main" title="${esc(b.name)}"><a class="bm-name-link" href="https://business.facebook.com/latest/settings/business_users?business_id=${encodeURIComponent(b.id)}" target="_blank" rel="noopener noreferrer">${esc(b.name||'Không có tên')}</a></div><div class="name-id">${esc(b.id)}</div></td><td data-col="type">${esc(inferLimit(b))}</td><td data-col="ownership">${esc(b.businessRole||b.business_role||'_')}</td><td data-col="limit">${esc(inferType(b))}</td><td data-col="verified"><span class="pill ${vc}">${esc(ver)}</span></td><td data-col="created">${esc(date(b.created_time))}</td><td data-col="admins">${esc(b.businessUsersAdminCount ?? 0)}</td><td data-col="accounts">${arrCount(b.owned_ad_accounts)+arrCount(b.client_ad_accounts)}</td><td data-col="root">${esc(rootId(b))}</td></tr>`}).join(''); applyColumnOrder(); syncSelectAll(); };
+  const render = () => { const rows=visibleBusinesses(); const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE)); bmPage=Math.min(bmPage,totalPages); const pageRows=rows.slice((bmPage-1)*PAGE_SIZE,bmPage*PAGE_SIZE); count.textContent=rows.length; updatePagination(totalPages); body.innerHTML=pageRows.map((b)=>{const [st,sc]=status(b),[ver,vc]=verified(b);const checking=b.__checking;return `<tr><td data-col="select"><input type="checkbox" class="bm-select" data-bm-id="${esc(b.id)}" aria-label="Chọn BM ${esc(b.name||b.id)}" ${selectedIds.has(String(b.id))?'checked':''}></td><td data-col="status"><span class="pill ${b.__checkError ? 'restricted' : sc}" title="${esc(b.__checkError || '')}">${checking?'Checking…':(b.__checkError?'Lỗi':st)}</span>${b.__checkError ? `<small class="bm-row-error">${esc(b.__checkError)}</small>` : ''}</td><td data-col="name" class="name"><div class="name-main" title="${esc(b.name)}"><a class="bm-name-link" href="https://business.facebook.com/latest/settings/business_users?business_id=${encodeURIComponent(b.id)}" target="_blank" rel="noopener noreferrer">${esc(b.name||'Không có tên')}</a></div><div class="name-id">${esc(b.id)}</div></td><td data-col="type">${esc(inferLimit(b))}</td><td data-col="ownership">${esc(b.businessRole||b.business_role||'_')}</td><td data-col="limit">${esc(inferType(b))}</td><td data-col="verified"><span class="pill ${vc}">${esc(ver)}</span></td><td data-col="created">${esc(date(b.created_time))}</td><td data-col="admins">${esc(b.businessUsersAdminCount ?? 0)}</td><td data-col="accounts">${arrCount(b.owned_ad_accounts)+arrCount(b.client_ad_accounts)}</td><td data-col="root">${esc(rootId(b))}</td></tr>`}).join(''); applyColumnOrder(); syncSelectAll(); };
   const showNotice=(type,text)=>notice.innerHTML=`<div class="${type}">${esc(text)}</div>`;
   const syncSelectAll = () => {
     const master = document.getElementById('selectAllBms');
@@ -210,7 +213,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     const text = String(message || '').toLowerCase();
     return !text || text.includes('timeout') || text.includes('network') ||
       text.includes('receiving end') || text.includes('no response') ||
-      text.includes('rate') || text.includes('429') || text.includes('502') ||
+      text.includes('rate') || text.includes('failed to fetch') || text.includes('networkerror') || text.includes('429') || text.includes('502') ||
       text.includes('503') || text.includes('504') || text.includes('limit endpoint') ||
       text.includes('chưa nhận được limit');
   };
@@ -224,7 +227,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
           Object.assign(business, checked);
           business.__checked = true;
           business.__checkError = '';
-          if (String(business.adAccountLimit ?? '').trim() !== '_') return true;
+          if (String(business.adAccountLimit ?? '').trim() !== '_' && String(business.businessRole ?? '').trim() !== '_') return true;
           lastError = 'Chưa nhận được Limit';
         } else {
           lastError = response?.error || 'Kiểm tra thất bại';
@@ -239,11 +242,12 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       }
     }
     business.__checkError = lastError;
+    console.warn('[BM CHECK ERROR]', business.id, business.name, lastError);
     return false;
   }
   async function autoCheckAll(){
     const batchSize = 50;
-    const concurrency = 10;
+    const concurrency = 5;
     let completed = 0;
     for (let offset = 0; offset < businesses.length; offset += batchSize) {
       const batch = businesses.slice(offset, offset + batchSize);
