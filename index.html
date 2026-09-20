@@ -49,6 +49,18 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   max-width: 42px;
 }
 </style>
+
+<style>
+/* Kéo đổi thứ tự và chiều rộng cột TKQC */
+.personal-table { table-layout: fixed; }
+.personal-table th { position: sticky; overflow: hidden; resize: horizontal; min-width: 78px; }
+.personal-table th:first-child { resize: none; }
+.personal-table .personal-drag-handle { display:inline-flex; align-items:center; justify-content:center; width:16px; height:19px; margin-right:3px; color:#9bb8ae; cursor:grab; border-radius:4px; }
+.personal-table .personal-drag-handle:hover { background:#dff8ef; color:#059669; }
+.personal-table th.personal-dragging { opacity:.45; }
+.personal-table th.personal-drag-over { background:#dff8ef; box-shadow:inset 3px 0 #11b886; }
+.personal-table.is-dragging th { cursor:grabbing; }
+</style>
 </head>
 <body>
 <div class="app">
@@ -84,6 +96,69 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   const applyColumnOrder=()=>{const table=document.querySelector('.bm-table');if(!table)return;[table.tHead,...table.tBodies].forEach(section=>Array.from(section.rows).forEach(row=>{const cells=Array.from(row.children);columnOrder.forEach(key=>{const cell=cells.find(x=>x.dataset.col===key);if(cell)row.appendChild(cell);});}));};
   const setupColumnDrag=()=>{const table=document.querySelector('.bm-table');if(!table)return;const headers=table.querySelectorAll('th[data-col]');headers.forEach(th=>{th.draggable=false;if(th.dataset.col==='select')return;const handle=document.createElement('span');handle.className='drag-handle';handle.textContent='⋮⋮';handle.title='Kéo để di chuyển cột';handle.draggable=true;th.prepend(handle);handle.addEventListener('dragstart',e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',th.dataset.col);th.classList.add('dragging');table.classList.add('is-dragging');});handle.addEventListener('dragend',()=>{th.classList.remove('dragging');table.classList.remove('is-dragging');headers.forEach(x=>x.classList.remove('drag-over'));});th.addEventListener('dragover',e=>{if(!table.classList.contains('is-dragging'))return;e.preventDefault();e.dataTransfer.dropEffect='move';headers.forEach(x=>x.classList.remove('drag-over'));th.classList.add('drag-over');});th.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain'),to=th.dataset.col;if(!from||from===to)return;const next=columnOrder.filter(x=>x!==from);const targetIndex=next.indexOf(to);next.splice(targetIndex<0?next.length:targetIndex,0,from);columnOrder=next;localStorage.setItem(columnStorageKey,JSON.stringify(columnOrder));applyColumnOrder();headers.forEach(x=>x.classList.remove('drag-over'));});});applyColumnOrder();};
   const resetColumnOrder=()=>{columnOrder=defaultColumnOrder.slice();localStorage.removeItem(columnStorageKey);applyColumnOrder();};
+  const personalColumnKey = 'bm-control-personal-column-order-v1';
+  let personalColumnOrder = (() => {
+    const count = document.querySelector('.personal-table thead tr')?.children.length || 0;
+    try {
+      const saved = JSON.parse(localStorage.getItem(personalColumnKey) || 'null');
+      return Array.isArray(saved) && saved.length === count ? saved : Array.from({length: count}, (_, i) => String(i));
+    } catch { return Array.from({length: count}, (_, i) => String(i)); }
+  })();
+  const applyPersonalColumnOrder = () => {
+    const table = document.querySelector('.personal-table');
+    if (!table) return;
+    [table.tHead, ...table.tBodies].forEach(section => Array.from(section.rows).forEach(row => {
+      const cells = Array.from(row.children);
+      personalColumnOrder.forEach(key => { const cell = cells.find(x => x.dataset.pcol === key); if (cell) row.appendChild(cell); });
+    }));
+  };
+  const setupPersonalColumnControls = () => {
+    const table = document.querySelector('.personal-table');
+    const header = table?.tHead?.rows?.[0];
+    if (!table || !header || table.dataset.controlsReady === '1') return;
+    table.dataset.controlsReady = '1';
+    Array.from(header.cells).forEach((th, index) => {
+      th.dataset.pcol = String(index);
+      if (index === 0) return;
+      const handle = document.createElement('span');
+      handle.className = 'personal-drag-handle';
+      handle.textContent = '⋮⋮';
+      handle.title = 'Kéo để di chuyển cột';
+      handle.draggable = true;
+      th.prepend(handle);
+      handle.addEventListener('dragstart', event => {
+        event.stopPropagation();
+        table.classList.add('is-dragging');
+        th.classList.add('personal-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', th.dataset.pcol);
+      });
+      handle.addEventListener('dragend', () => {
+        table.classList.remove('is-dragging');
+        header.querySelectorAll('th').forEach(cell => cell.classList.remove('personal-drag-over', 'personal-dragging'));
+      });
+      th.addEventListener('dragover', event => {
+        if (!table.classList.contains('is-dragging')) return;
+        event.preventDefault();
+        th.classList.add('personal-drag-over');
+      });
+      th.addEventListener('dragleave', () => th.classList.remove('personal-drag-over'));
+      th.addEventListener('drop', event => {
+        event.preventDefault();
+        const from = event.dataTransfer.getData('text/plain');
+        const to = th.dataset.pcol;
+        if (!from || from === to) return;
+        const next = personalColumnOrder.filter(key => key !== from);
+        const target = next.indexOf(to);
+        next.splice(target < 0 ? next.length : target, 0, from);
+        personalColumnOrder = next;
+        localStorage.setItem(personalColumnKey, JSON.stringify(next));
+        applyPersonalColumnOrder();
+        header.querySelectorAll('th').forEach(cell => cell.classList.remove('personal-drag-over'));
+      });
+    });
+    applyPersonalColumnOrder();
+  };
  const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); const prevPage = document.getElementById('prevPage'); const nextPage = document.getElementById('nextPage'); const pageInfo = document.getElementById('pageInfo'); const PAGE_SIZE = 50; let bmPage=1; let personalPage=1; const selectedPersonalIds = new Set(); let businesses=[]; let personalAccounts=[]; let activeTab='bm';
   const esc = (v) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const send = (action,payload={}) => new Promise((resolve,reject)=>{ if(!extensionId)return reject(new Error('Hãy mở website bằng nút Trang chủ trong extension.')); chrome.runtime.sendMessage(extensionId,{source:'BM_DASHBOARD',action,requestId:crypto.randomUUID(),...payload},response=>{ if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message)); if(!response)return reject(new Error('Extension không trả về dữ liệu.')); resolve(response); }); });
@@ -237,30 +312,31 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     countLabel.textContent = 'Tài khoản cá nhân';
     updatePagination(totalPages);
     personalBody.innerHTML = pageRows.map((account, index) => { const accountId = String(account.account_id || account.id || ''); return `<tr>
-      <td class="check-col"><input type="checkbox" class="personal-select" data-account-id="${esc(accountId)}" aria-label="Chọn TKQC ${esc(accountId)}" ${selectedPersonalIds.has(accountId) ? 'checked' : ''}></td>
-      <td>${(personalPage - 1) * PAGE_SIZE + index + 1}</td>
-      <td class="name"><div class="name-main">${esc(personalValue(account, 'name'))}</div></td>
-      <td>${esc(personalValue(account, 'account_id'))}</td>
-      <td>${esc(personalMoney(account.balance))}</td>
-      <td>${esc(personalThreshold(account))}</td>
-      <td>${esc(personalThresholdRemaining(account))}</td>
-      <td>${esc(personalValue(account, 'adtrust_dsl'))}</td>
-      <td>${esc(personalSpend(account))}</td>
-      <td>${esc(account.__detailError || personalValue(account, 'disable_reason'))}</td>
-      <td>${esc(personalValue(account, 'currency'))}</td>
-      <td>${esc(personalValue(account, 'owner'))}</td>
-      <td>${esc(personalMoney(account.spend_cap))}</td>
-      <td>${esc(personalPayment(account))}</td>
-      <td>${esc(date(account.next_bill_date))}</td>
-      <td>${esc(personalDaysToBill(account))}</td>
-      <td>${esc(personalValue(account, 'disable_reason'))}</td>
-      <td>${esc(date(account.created_time))}</td>
-      <td>${esc(account.is_prepay_account ? 'Prepay' : 'Postpay')}</td>
-      <td>${esc(personalValue(account, 'timezone_name'))}</td>
-      <td>${esc(personalValue(account, 'owner_business'))}</td>
-      <td>${esc(personalValue(account, 'business_country_code'))}</td>
+      <td data-pcol="0" class="check-col"><input type="checkbox" class="personal-select" data-account-id="${esc(accountId)}" aria-label="Chọn TKQC ${esc(accountId)}" ${selectedPersonalIds.has(accountId) ? 'checked' : ''}></td>
+      <td data-pcol="1">${(personalPage - 1) * PAGE_SIZE + index + 1}</td>
+      <td data-pcol="2" class="name"><div class="name-main">${esc(personalValue(account, 'name'))}</div></td>
+      <td data-pcol="3">${esc(personalValue(account, 'account_id'))}</td>
+      <td data-pcol="4">${esc(personalMoney(account.balance))}</td>
+      <td data-pcol="5">${esc(personalThreshold(account))}</td>
+      <td data-pcol="6">${esc(personalThresholdRemaining(account))}</td>
+      <td data-pcol="7">${esc(personalValue(account, 'adtrust_dsl'))}</td>
+      <td data-pcol="8">${esc(personalSpend(account))}</td>
+      <td data-pcol="9">${esc(account.__detailError || personalValue(account, 'disable_reason'))}</td>
+      <td data-pcol="10">${esc(personalValue(account, 'currency'))}</td>
+      <td data-pcol="11">${esc(personalValue(account, 'owner'))}</td>
+      <td data-pcol="12">${esc(personalMoney(account.spend_cap))}</td>
+      <td data-pcol="13">${esc(personalPayment(account))}</td>
+      <td data-pcol="14">${esc(date(account.next_bill_date))}</td>
+      <td data-pcol="15">${esc(personalDaysToBill(account))}</td>
+      <td data-pcol="16">${esc(personalValue(account, 'disable_reason'))}</td>
+      <td data-pcol="17">${esc(date(account.created_time))}</td>
+      <td data-pcol="18">${esc(account.is_prepay_account ? 'Prepay' : 'Postpay')}</td>
+      <td data-pcol="19">${esc(personalValue(account, 'timezone_name'))}</td>
+      <td data-pcol="20">${esc(personalValue(account, 'owner_business'))}</td>
+      <td data-pcol="21">${esc(personalValue(account, 'business_country_code'))}</td>
     </tr>`; }).join('');
     syncPersonalSelectAll(pageRows);
+    applyPersonalColumnOrder();
   };
   const syncPersonalSelectAll = visibleRows => {
     const master = document.getElementById('selectAllPersonal');
@@ -356,6 +432,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   document.getElementById('bmTab').onclick = () => switchTab('bm');
   document.getElementById('pageTab').onclick = () => alert('Chức năng Page sẽ được bổ sung sau.');
   setupColumnDrag();
+  setupPersonalColumnControls();
   document.querySelectorAll('.sort-btn').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.sort;if(key==='status'){statusFilter=statusFilter==='Live'?'Restricted':statusFilter==='Restricted'?'':'Live';sortKey='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));if(statusFilter)btn.classList.add('active');}else{if(sortKey===key)sortDirection*=-1;else{sortKey=key;sortDirection=1;}statusFilter='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}render();});
   async function load(){showNotice('loading','Đang kết nối extension và tải danh sách BM...');body.innerHTML='';try{const p=await send('PING');if(!p.success)throw new Error(p.error);const s=await send('CHECK_SESSION');if(!s.success)throw new Error(s.error);const r=await send('LOAD_BM');if(!r.success)throw new Error(r.error);businesses=r.data?.businesses||[];notice.innerHTML=businesses.length?'':'<div class="empty">Chưa có dữ liệu BM.</div>';render();if(businesses.length)await autoCheckAll();}catch(e){showNotice('error',e.message||'Không thể tải BM.');}}
   document.getElementById('reloadBtn').onclick=()=>activeTab==='personal'?loadPersonal():load();
