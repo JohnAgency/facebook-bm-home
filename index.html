@@ -43,7 +43,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
   <div class="toolbar"><button class="tool primary" id="reloadBtn">▣ &nbsp; Tải tài khoản</button><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
   <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
-  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th>TT</th><th>Tài khoản</th><th>ID gốc</th><th>Số dư</th><th>Ngưỡng</th><th>Ngưỡng còn lại</th><th>Limit</th><th>Tổng tiêu</th><th>Ghi chú</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
+  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>TT</th><th>Tài khoản</th><th>ID gốc</th><th>Số dư</th><th>Ngưỡng</th><th>Ngưỡng còn lại</th><th>Limit</th><th>Tổng tiêu</th><th>Ghi chú</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
   <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
 </main>
 </div>
@@ -65,7 +65,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   const applyColumnOrder=()=>{const table=document.querySelector('.bm-table');if(!table)return;[table.tHead,...table.tBodies].forEach(section=>Array.from(section.rows).forEach(row=>{const cells=Array.from(row.children);columnOrder.forEach(key=>{const cell=cells.find(x=>x.dataset.col===key);if(cell)row.appendChild(cell);});}));};
   const setupColumnDrag=()=>{const table=document.querySelector('.bm-table');if(!table)return;const headers=table.querySelectorAll('th[data-col]');headers.forEach(th=>{th.draggable=false;if(th.dataset.col==='select')return;const handle=document.createElement('span');handle.className='drag-handle';handle.textContent='⋮⋮';handle.title='Kéo để di chuyển cột';handle.draggable=true;th.prepend(handle);handle.addEventListener('dragstart',e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',th.dataset.col);th.classList.add('dragging');table.classList.add('is-dragging');});handle.addEventListener('dragend',()=>{th.classList.remove('dragging');table.classList.remove('is-dragging');headers.forEach(x=>x.classList.remove('drag-over'));});th.addEventListener('dragover',e=>{if(!table.classList.contains('is-dragging'))return;e.preventDefault();e.dataTransfer.dropEffect='move';headers.forEach(x=>x.classList.remove('drag-over'));th.classList.add('drag-over');});th.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain'),to=th.dataset.col;if(!from||from===to)return;const next=columnOrder.filter(x=>x!==from);const targetIndex=next.indexOf(to);next.splice(targetIndex<0?next.length:targetIndex,0,from);columnOrder=next;localStorage.setItem(columnStorageKey,JSON.stringify(columnOrder));applyColumnOrder();headers.forEach(x=>x.classList.remove('drag-over'));});});applyColumnOrder();};
   const resetColumnOrder=()=>{columnOrder=defaultColumnOrder.slice();localStorage.removeItem(columnStorageKey);applyColumnOrder();};
- const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); const prevPage = document.getElementById('prevPage'); const nextPage = document.getElementById('nextPage'); const pageInfo = document.getElementById('pageInfo'); const PAGE_SIZE = 50; let bmPage=1; let personalPage=1; let businesses=[]; let personalAccounts=[]; let activeTab='bm';
+ const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); const prevPage = document.getElementById('prevPage'); const nextPage = document.getElementById('nextPage'); const pageInfo = document.getElementById('pageInfo'); const PAGE_SIZE = 50; let bmPage=1; let personalPage=1; const selectedPersonalIds = new Set(); let businesses=[]; let personalAccounts=[]; let activeTab='bm';
   const esc = (v) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const send = (action,payload={}) => new Promise((resolve,reject)=>{ if(!extensionId)return reject(new Error('Hãy mở website bằng nút Trang chủ trong extension.')); chrome.runtime.sendMessage(extensionId,{source:'BM_DASHBOARD',action,requestId:crypto.randomUUID(),...payload},response=>{ if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message)); if(!response)return reject(new Error('Extension không trả về dữ liệu.')); resolve(response); }); });
   const arrCount = x => Array.isArray(x?.data)?x.data.length:(Array.isArray(x)?x.length:0);
@@ -217,7 +217,8 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     count.textContent = rows.length;
     countLabel.textContent = 'Tài khoản cá nhân';
     updatePagination(totalPages);
-    personalBody.innerHTML = pageRows.map((account, index) => `<tr>
+    personalBody.innerHTML = pageRows.map((account, index) => { const accountId = String(account.account_id || account.id || ''); return `<tr>
+      <td class="check-col"><input type="checkbox" class="personal-select" data-account-id="${esc(accountId)}" aria-label="Chọn TKQC ${esc(accountId)}" ${selectedPersonalIds.has(accountId) ? 'checked' : ''}></td>
       <td>${(personalPage - 1) * PAGE_SIZE + index + 1}</td>
       <td class="name"><div class="name-main">${esc(personalValue(account, 'name'))}</div></td>
       <td>${esc(personalValue(account, 'account_id'))}</td>
@@ -239,8 +240,34 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       <td>${esc(personalValue(account, 'timezone_name'))}</td>
       <td>${esc(personalValue(account, 'owner_business'))}</td>
       <td>${esc(personalValue(account, 'business_country_code'))}</td>
-    </tr>`).join('');
+    </tr>`; }).join('');
+    syncPersonalSelectAll(pageRows);
   };
+  const syncPersonalSelectAll = visibleRows => {
+    const master = document.getElementById('selectAllPersonal');
+    if (!master) return;
+    const ids = visibleRows.map(account => String(account.account_id || account.id || ''));
+    const selected = ids.filter(id => selectedPersonalIds.has(id)).length;
+    master.checked = ids.length > 0 && selected === ids.length;
+    master.indeterminate = selected > 0 && selected < ids.length;
+  };
+  personalBody.addEventListener('change', event => {
+    const checkbox = event.target.closest('.personal-select');
+    if (!checkbox) return;
+    const id = String(checkbox.dataset.accountId || '');
+    if (checkbox.checked) selectedPersonalIds.add(id); else selectedPersonalIds.delete(id);
+    syncPersonalSelectAll(visiblePersonalRows());
+  });
+  const visiblePersonalRows = () => {
+    const query = search.value.trim().toLowerCase();
+    const rows = personalAccounts.filter(account => String(account.name || '').toLowerCase().includes(query) || String(account.account_id || '').includes(query));
+    return rows.slice((personalPage - 1) * PAGE_SIZE, personalPage * PAGE_SIZE);
+  };
+  document.addEventListener('change', event => {
+    if (event.target.id !== 'selectAllPersonal') return;
+    visiblePersonalRows().forEach(account => { const id = String(account.account_id || account.id || ''); if (event.target.checked) selectedPersonalIds.add(id); else selectedPersonalIds.delete(id); });
+    renderPersonal();
+  });
   async function checkPersonalAccountsInBatches() {
     const batchSize = 50;
     let completed = 0;
