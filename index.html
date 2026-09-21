@@ -369,34 +369,50 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   });
   async function checkPersonalAccountsInBatches() {
     const batchSize = 25;
-    let completed = 0;
+    const concurrency = 2;
+    const batches = [];
     for (let offset = 0; offset < personalAccounts.length; offset += batchSize) {
-      const batch = personalAccounts.slice(offset, offset + batchSize);
-      const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
-      batch.forEach(account => { account.__checking = true; account.__detailError = ''; });
-      renderPersonal();
-      personalNotice.innerHTML = `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang kiểm tra ${completed}/${personalAccounts.length} · Lô ${Math.floor(offset / batchSize) + 1}</div>`;
-      try {
-        const response = await send('CHECK_PERSONAL_ACCOUNTS_BATCH', { accountIds });
-        if (!response.success) throw new Error(response.error || 'Check batch TKQC thất bại.');
-        const checked = response.data?.accounts || [];
-        const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
-        batch.forEach(account => {
-          const detail = checkedMap.get(String(account.account_id || account.id));
-          if (detail) Object.assign(account, detail);
-          else account.__detailError = 'Không nhận được dữ liệu chi tiết.';
-          account.__checking = false;
-        });
-      } catch (error) {
-        batch.forEach(account => {
-          account.__checking = false;
-          account.__detailError = error.message || 'Không check được TKQC.';
-        });
-      }
-      completed += batch.length;
-      renderPersonal();
-      personalNotice.innerHTML = `<div class="loading">Đã kiểm tra ${Math.min(completed, personalAccounts.length)}/${personalAccounts.length} TKQC.</div>`;
+      batches.push(personalAccounts.slice(offset, offset + batchSize));
     }
+
+    let nextBatch = 0;
+    let completed = 0;
+    const runWorker = async () => {
+      while (nextBatch < batches.length) {
+        const batchIndex = nextBatch++;
+        const batch = batches[batchIndex];
+        const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
+        batch.forEach(account => { account.__checking = true; account.__detailError = ''; });
+        renderPersonal();
+        personalNotice.innerHTML = `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang kiểm tra ${completed}/${personalAccounts.length} · Tối đa 2 lô song song</div>`;
+
+        try {
+          const response = await send('CHECK_PERSONAL_ACCOUNTS_BATCH', { accountIds });
+          if (!response.success) throw new Error(response.error || 'Check batch TKQC thất bại.');
+          const checked = response.data?.accounts || [];
+          const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
+          batch.forEach(account => {
+            const detail = checkedMap.get(String(account.account_id || account.id));
+            if (detail) Object.assign(account, detail);
+            else account.__detailError = 'Không nhận được dữ liệu chi tiết.';
+            account.__checking = false;
+          });
+        } catch (error) {
+          batch.forEach(account => {
+            account.__checking = false;
+            account.__detailError = error.message || 'Không check được TKQC.';
+          });
+        }
+
+        completed += batch.length;
+        renderPersonal();
+        personalNotice.innerHTML = `<div class="loading">Đã kiểm tra ${Math.min(completed, personalAccounts.length)}/${personalAccounts.length} TKQC.</div>`;
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, batches.length) }, runWorker)
+    );
     personalNotice.innerHTML = `<div class="loading">Đã hoàn tất kiểm tra ${personalAccounts.length} TKQC.</div>`;
   }
   async function loadPersonal() {
