@@ -77,7 +77,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
   <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
   <div class="toolbar"><button class="tool primary" id="reloadBtn">▣ &nbsp; Tải tài khoản</button><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
   <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
-  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>TT</th><th>Tài khoản</th><th>ID gốc</th><th>Số dư</th><th>Ngưỡng</th><th>Ngưỡng còn lại</th><th>Limit</th><th>Tổng tiêu</th><th>Ghi chú</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
+  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>TT</th><th>Tài khoản</th><th>ID gốc</th><th>Số dư</th><th>Ngưỡng</th><th>Ngưỡng còn lại</th><th>Limit</th><th>Tổng tiêu</th><th>Trạng thái tài khoản</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
   <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
 </main>
 </div>
@@ -319,12 +319,16 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       : '—';
   };
   const personalSpend = account => personalMoney(account?.amount_spent ?? account?.insights?.data?.[0]?.spend ?? account?.insights?.spend);
+  const personalStatus = account => ({ '1': 'Đang hoạt động', '2': 'Vô hiệu hóa', '3': 'Cần thanh toán', '8': 'Đang chờ thanh toán', '100': 'Đang chờ đóng tài khoản', '101': 'Đã đóng tài khoản' }[String(account?.account_status)] || personalValue(account, 'account_status'));
+  const personalType = account => account?.is_prepay_account === true || String(account?.is_prepay_account).toLowerCase() === 'true' ? 'Tài khoản trả trước' : account?.is_prepay_account === false || String(account?.is_prepay_account).toLowerCase() === 'false' ? 'Tài khoản trả sau' : '—';
   const personalPayment = account => {
     const payment = account?.all_payment_methods || {};
-    const card = payment.pm_credit_card?.display_string;
+    const card = payment.pm_credit_card?.display_string || payment.pm_credit_card?.data?.[0]?.display_string;
     const debit = payment.payment_method_direct_debits?.display_string;
     const paypal = payment.payment_method_paypal?.email_address;
-    return card || debit || paypal || '—';
+    if (card || debit || paypal) return card || debit || paypal;
+    if (account?.funding_source_details && String(account.funding_source_details).trim()) return account.funding_source_details;
+    return '—';
   };
   const personalDaysToBill = account => {
     if (!account?.next_bill_date) return '—';
@@ -353,7 +357,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       <td data-pcol="6">${esc(personalThresholdRemaining(account))}</td>
       <td data-pcol="7">${esc(personalLimit(account))}</td>
       <td data-pcol="8">${esc(personalFormatMoney(account, personalSpend(account)))}</td>
-      <td data-pcol="9">${esc(account.__detailError || personalValue(account, 'disable_reason'))}</td>
+      <td data-pcol="9">${esc(account.__detailError || personalStatus(account))}</td>
       <td data-pcol="10">${esc(personalValue(account, 'currency'))}</td>
       <td data-pcol="11">${esc(personalValue(account, 'owner'))}</td>
       <td data-pcol="12">${esc(personalFormatMoney(account, account.spend_cap))}</td>
@@ -362,7 +366,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       <td data-pcol="15">${esc(personalDaysToBill(account))}</td>
       <td data-pcol="16">${esc(personalValue(account, 'disable_reason'))}</td>
       <td data-pcol="17">${esc(date(account.created_time))}</td>
-      <td data-pcol="18">${esc(account.is_prepay_account ? 'Prepay' : 'Postpay')}</td>
+      <td data-pcol="18">${esc(personalType(account))}</td>
       <td data-pcol="19">${esc(personalValue(account, 'timezone_name'))}</td>
       <td data-pcol="20">${esc(personalValue(account, 'owner_business'))}</td>
       <td data-pcol="21">${esc(personalValue(account, 'business_country_code'))}</td>
@@ -443,6 +447,43 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     );
     personalNotice.innerHTML = `<div class="loading">Đã hoàn tất kiểm tra ${personalAccounts.length} TKQC.</div>`;
   }
+  async function checkPersonalSupplementInBatches() {
+    const batchSize = 25;
+    const concurrency = 2;
+    const batches = [];
+    for (let offset = 0; offset < personalAccounts.length; offset += batchSize) batches.push(personalAccounts.slice(offset, offset + batchSize));
+    let nextBatch = 0;
+    let completed = 0;
+    const runWorker = async () => {
+      while (nextBatch < batches.length) {
+        const batch = batches[nextBatch++];
+        const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
+        batch.forEach(account => { account.__supplementChecking = true; });
+        renderPersonal();
+        try {
+          const response = await send('CHECK_PERSONAL_ACCOUNTS_SUPPLEMENT_BATCH', { accountIds });
+          if (!response.success) throw new Error(response.error || 'Check bổ sung TKQC thất bại.');
+          const checked = response.data?.accounts || [];
+          const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
+          batch.forEach(account => {
+            const detail = checkedMap.get(String(account.account_id || account.id));
+            if (detail) Object.assign(account, detail);
+            account.__supplementChecking = false;
+          });
+        } catch (error) {
+          batch.forEach(account => {
+            account.__supplementChecking = false;
+            account.__supplementError = error.message || 'Không check được dữ liệu bổ sung.';
+          });
+        }
+        completed += batch.length;
+        renderPersonal();
+        personalNotice.innerHTML = `<div class="loading">Đã check thông tin bổ sung ${Math.min(completed, personalAccounts.length)}/${personalAccounts.length} TKQC · Ngưỡng · Trạng thái · Loại TK · Thẻ thanh toán</div>`;
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, runWorker));
+    personalNotice.innerHTML = `<div class="loading">Đã hoàn tất check bổ sung ${personalAccounts.length} TKQC.</div>`;
+  }
   async function loadPersonal() {
     personalNotice.innerHTML = '<div class="loading">Đang tải danh sách TKQC cá nhân...</div>';
     personalBody.innerHTML = '';
@@ -458,7 +499,10 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
         ? `<div class="loading">Đã tải ${personalAccounts.length} TKQC. Đang hiển thị Tên và ID, chuẩn bị check theo lô 25...</div>`
         : '<div class="empty">Chưa có TKQC cá nhân.</div>';
       renderPersonal();
-      if (personalAccounts.length) await checkPersonalAccountsInBatches();
+      if (personalAccounts.length) {
+        await checkPersonalAccountsInBatches();
+        await checkPersonalSupplementInBatches();
+      }
     } catch (error) {
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
