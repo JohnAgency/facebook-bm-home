@@ -310,14 +310,16 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     if (String(value).trim() === '-1') return 'NOLIMIT';
     return personalMaybeMoney(account, value);
   };
-  const personalThreshold = account => personalMoney(account?.adspaymentcycle?.threshold_amount);
-  const personalThresholdRemaining = account => {
+  const personalThreshold = account => 
+    personalMoney(account?.adspaymentcycle?.data?.[0]?.threshold_amount);
+
+const personalThresholdRemaining = account => {
     const threshold = personalMoneyNumber(personalThreshold(account));
     const balance = personalMoneyNumber(account?.balance);
     return threshold !== null && balance !== null
-      ? personalFormatMoney(account, Math.max(0, threshold - balance))
-      : '—';
-  };
+        ? personalFormatMoney(account, Math.max(0, threshold - balance))
+        : '—';
+};
   const personalSpend = account => personalMoney(account?.amount_spent ?? account?.insights?.data?.[0]?.spend ?? account?.insights?.spend);
   const personalStatus = account => ({ '1': 'Đang hoạt động', '2': 'Vô hiệu hóa', '3': 'Cần thanh toán', '8': 'Đang chờ thanh toán', '100': 'Đang chờ đóng tài khoản', '101': 'Đã đóng tài khoản' }[String(account?.account_status)] || personalValue(account, 'account_status'));
   const personalType = account => account?.is_prepay_account === true || String(account?.is_prepay_account).toLowerCase() === 'true' ? 'Tài khoản trả trước' : account?.is_prepay_account === false || String(account?.is_prepay_account).toLowerCase() === 'false' ? 'Tài khoản trả sau' : '—';
