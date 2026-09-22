@@ -423,20 +423,20 @@ const personalCurrencyDivisor = account => {
       <td data-pcol="4">${esc(personalFormatMoney(account, account.balance))}</td>
       <td data-pcol="5">${esc(personalFormatMoney(account, personalThreshold(account)))}</td>
 
-      <td data-pcol="7">${esc(personalLimit(account))}</td>
-      <td data-pcol="8">${esc(personalFormatMoney(account, personalSpend(account)))}</td>
-      <td data-pcol="9">${esc(personalValue(account, 'currency'))}</td>
-      <td data-pcol="10">${esc(personalValue(account, 'owner'))}</td>
-      <td data-pcol="11">${esc(personalFormatMoney(account, account.spend_cap))}</td>
-      <td data-pcol="12">${esc(personalPayment(account))}</td>
-      <td data-pcol="13">${esc(personalBillDate(account))}</td>
-      <td data-pcol="14">${esc(personalDaysToBill(account))}</td>
-      <td data-pcol="15">${esc(personalDisableReason(account))}</td>
-      <td data-pcol="16">${esc(date(account.created_time))}</td>
-      <td data-pcol="17">${esc(personalType(account))}</td>
-      <td data-pcol="18">${esc(personalValue(account, 'timezone_name'))}</td>
-      <td data-pcol="19">${esc(personalValue(account, 'owner_business'))}</td>
-      <td data-pcol="20">${esc(personalValue(account, 'business_country_code'))}</td>
+      <td data-pcol="6">${esc(personalLimit(account))}</td>
+      <td data-pcol="7">${esc(personalFormatMoney(account, personalSpend(account)))}</td>
+      <td data-pcol="8">${esc(personalValue(account, 'currency'))}</td>
+      <td data-pcol="9">${esc(personalValue(account, 'owner'))}</td>
+      <td data-pcol="10">${esc(personalFormatMoney(account, account.spend_cap))}</td>
+      <td data-pcol="11">${esc(personalPayment(account))}</td>
+      <td data-pcol="12">${esc(personalBillDate(account))}</td>
+      <td data-pcol="13">${esc(personalDaysToBill(account))}</td>
+      <td data-pcol="14">${esc(personalDisableReason(account))}</td>
+      <td data-pcol="15">${esc(date(account.created_time))}</td>
+      <td data-pcol="16">${esc(personalType(account))}</td>
+      <td data-pcol="17">${esc(personalValue(account, 'timezone_name'))}</td>
+      <td data-pcol="18">${esc(personalValue(account, 'owner_business'))}</td>
+      <td data-pcol="19">${esc(personalValue(account, 'business_country_code'))}</td>
     </tr>`;
     }).join('');
     syncPersonalSelectAll(pageRows);
