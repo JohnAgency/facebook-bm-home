@@ -294,12 +294,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 
 const personalCurrencyDivisor = account => {
   if (personalCurrency(account) === 'VND') return 1;
-
-  const ratio = Number(account?.account_currency_ratio_to_usd);
-
-  return Number.isFinite(ratio) && ratio > 0
-    ? ratio
-    : 100;
+  return 100;
 };
   const personalMoneyNumber = (account, value) => {
   const raw = personalMoney(value);
@@ -330,10 +325,10 @@ const personalCurrencyDivisor = account => {
     const currency = personalCurrency(account);
     if (currency === 'VND') return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Math.round(number))} VNĐ`;
     try {
-      if (!personalMoneyFormatters.has(currency)) personalMoneyFormatters.set(currency, new Intl.NumberFormat('en-US', { style: 'currency', currency, currencyDisplay: 'symbol', maximumFractionDigits: 0 }));
-      return personalMoneyFormatters.get(currency).format(Math.round(number));
+      if (!personalMoneyFormatters.has(currency)) personalMoneyFormatters.set(currency, new Intl.NumberFormat('en-US', { style: 'currency', currency, currencyDisplay: 'symbol', minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      return personalMoneyFormatters.get(currency).format(number);
     } catch {
-      return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(number))} ${currency}`;
+      return `${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number)} ${currency}`;
     }
   };
   const personalMaybeMoney = (account, value) =>
