@@ -289,7 +289,18 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     if (typeof value === 'object') return value.amount ?? value.value ?? '—';
     return value;
   };
-  const personalCurrency = account => String(account?.currency || 'USD').trim().toUpperCase();
+  const personalCurrency = account =>
+  String(account?.currency || 'USD').trim().toUpperCase();
+
+const personalCurrencyDivisor = account => {
+  if (personalCurrency(account) === 'VND') return 1;
+
+  const ratio = Number(account?.account_currency_ratio_to_usd);
+
+  return Number.isFinite(ratio) && ratio > 0
+    ? ratio
+    : 100;
+};
   const personalMoneyNumber = value => {
     const raw = personalMoney(value);
     if (raw === '—') return null;
