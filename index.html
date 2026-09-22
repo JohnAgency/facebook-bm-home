@@ -359,6 +359,11 @@ const personalCurrencyDivisor = account => {
     'Cần thanh toán': 'status-pending-payment',
     'Đã đóng tài khoản': 'status-closed'
   }[label] || '');
+  const personalOwnership = account => {
+    const users = Array.isArray(account?.users?.data) ? account.users.data : [];
+    if (!users.length) return '—';
+    return users.some(user => String(user?.role) === '1001') ? 'Quản trị viên' : 'Nhân viên';
+  };
   const personalType = account => account?.is_prepay_account === true || String(account?.is_prepay_account).toLowerCase() === 'true' ? 'Tài khoản trả trước' : account?.is_prepay_account === false || String(account?.is_prepay_account).toLowerCase() === 'false' ? 'Tài khoản trả sau' : '—';
   const personalPayment = account => {
     const payment = account?.all_payment_methods || {};
@@ -434,7 +439,7 @@ const personalCurrencyDivisor = account => {
       <td data-pcol="6">${esc(personalLimit(account))}</td>
       <td data-pcol="7">${esc(personalFormatMoney(account, personalSpend(account)))}</td>
       <td data-pcol="8">${esc(personalValue(account, 'currency'))}</td>
-      <td data-pcol="9">${esc(personalValue(account, 'owner'))}</td>
+      <td data-pcol="9">${esc(personalOwnership(account))}</td>
       <td data-pcol="10">${esc(personalFormatMoney(account, account.spend_cap))}</td>
       <td data-pcol="11">${esc(personalPayment(account))}</td>
       <td data-pcol="12">${esc(personalBillDate(account))}</td>
