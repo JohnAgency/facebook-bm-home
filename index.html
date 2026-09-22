@@ -301,14 +301,28 @@ const personalCurrencyDivisor = account => {
     ? ratio
     : 100;
 };
-  const personalMoneyNumber = value => {
-    const raw = personalMoney(value);
-    if (raw === '—') return null;
-    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
-    const normalized = String(raw).replace(/[^0-9+\-.,]/g, '').replace(/,(?=\d{3}(?:\D|$))/g, '').replace(',', '.');
-    const number = Number(normalized);
-    return Number.isFinite(number) ? number : null;
-  };
+  const personalMoneyNumber = (account, value) => {
+  const raw = personalMoney(value);
+
+  if (raw === '—') return null;
+
+  if (typeof raw === 'number') {
+    return Number.isFinite(raw)
+      ? raw / personalCurrencyDivisor(account)
+      : null;
+  }
+
+  const normalized = String(raw)
+    .replace(/[^0-9+\-.,]/g, '')
+    .replace(/,(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+
+  const number = Number(normalized);
+
+  return Number.isFinite(number)
+    ? number / personalCurrencyDivisor(account)
+    : null;
+};
   const personalMoneyFormatters = new Map();
   const personalFormatMoney = (account, value) => {
     const number = personalMoneyNumber(value);
