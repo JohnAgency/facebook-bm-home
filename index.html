@@ -338,7 +338,15 @@ const personalCurrencyDivisor = account => {
   const personalLimit = account => {
     const value = personalMoney(account?.adtrust_dsl);
     if (String(value).trim() === '-1') return 'NOLIMIT';
-    return personalMaybeMoney(account, value);
+    const rawNumber = Number(String(value).replace(/[^0-9+\-.]/g, ''));
+    if (!Number.isFinite(rawNumber)) return value;
+    if (personalCurrency(account) === 'USD') {
+      return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(rawNumber))} USD`;
+    }
+    if (personalCurrency(account) === 'VND') {
+      return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Math.round(rawNumber))} VNĐ`;
+    }
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(rawNumber))} ${personalCurrency(account)}`;
   };
   const personalThreshold = account => 
     personalMoney(account?.adspaymentcycle?.data?.[0]?.threshold_amount);
