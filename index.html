@@ -325,7 +325,7 @@ const personalCurrencyDivisor = account => {
 };
   const personalMoneyFormatters = new Map();
   const personalFormatMoney = (account, value) => {
-    const number = personalMoneyNumber(value);
+    const number = personalMoneyNumber(account, value);
     if (number === null) return '—';
     const currency = personalCurrency(account);
     if (currency === 'VND') return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Math.round(number))} VNĐ`;
@@ -336,7 +336,10 @@ const personalCurrencyDivisor = account => {
       return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(number))} ${currency}`;
     }
   };
-  const personalMaybeMoney = (account, value) => personalMoneyNumber(value) === null ? personalMoney(value) : personalFormatMoney(account, value);
+  const personalMaybeMoney = (account, value) =>
+  personalMoneyNumber(account, value) === null
+    ? personalMoney(value)
+    : personalFormatMoney(account, value);
   const personalLimit = account => {
     const value = personalMoney(account?.adtrust_dsl);
     if (String(value).trim() === '-1') return 'NOLIMIT';
@@ -346,8 +349,15 @@ const personalCurrencyDivisor = account => {
     personalMoney(account?.adspaymentcycle?.data?.[0]?.threshold_amount);
 
 const personalThresholdRemaining = account => {
-    const threshold = personalMoneyNumber(personalThreshold(account));
-    const balance = personalMoneyNumber(account?.balance);
+    const threshold = personalMoneyNumber(
+  account,
+  personalThreshold(account)
+);
+
+const balance = personalMoneyNumber(
+  account,
+  account?.balance
+);
     return threshold !== null && balance !== null
         ? personalFormatMoney(account, Math.max(0, threshold - balance))
         : '—';
