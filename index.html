@@ -355,6 +355,28 @@ const personalThresholdRemaining = account => {
     const yyyy = dt.getFullYear();
     return `${dd}-${mm}-${yyyy}`;
   };
+  const personalDisableReasonMap = {
+    '0': 'Tốt',
+    '1': 'Vi phạm chính sách tính toàn vẹn quảng cáo',
+    '2': 'Đang được xem xét địa chỉ IP liên quan đến quảng cáo',
+    '3': 'Rủi ro thanh toán',
+    '4': 'Tài khoản đã bị đóng',
+    '5': 'Đang được xem xét bởi hệ thống kiểm duyệt quảng cáo AFC',
+    '6': 'Đánh giá tính toàn vẹn doanh nghiệp',
+    '7': 'Đã bị đóng vĩnh viễn',
+    '8': 'Tài khoản nhà phân phối không được sử dụng',
+    '9': 'Tài khoản không được sử dụng',
+    '11': 'Vi phạm chính sách tính toàn vẹn của Trình quản lý doanh nghiệp',
+    '12': 'Tài khoản quảng cáo trình bày sai sự thật',
+    '13': 'Vấn đề pháp lý liên quan đến chia sẻ tài khoản AOAB',
+    '15': 'Tài khoản quảng cáo bị xâm phạm'
+  };
+  const personalDisableReason = account => {
+    const raw = account?.disable_reason;
+    if (raw === undefined || raw === null || raw === '') return '_';
+    const key = String(raw);
+    return personalDisableReasonMap[key] || key;
+  };
   const personalDaysToBill = account => {
     if (!account?.next_bill_date) return '—';
     const days = Math.ceil((new Date(account.next_bill_date).getTime() - Date.now()) / 86400000);
@@ -393,7 +415,7 @@ const personalThresholdRemaining = account => {
       <td data-pcol="12">${esc(personalPayment(account))}</td>
       <td data-pcol="13">${esc(personalBillDate(account))}</td>
       <td data-pcol="14">${esc(personalDaysToBill(account))}</td>
-      <td data-pcol="15">${esc(personalValue(account, 'disable_reason'))}</td>
+      <td data-pcol="15">${esc(personalDisableReason(account))}</td>
       <td data-pcol="16">${esc(date(account.created_time))}</td>
       <td data-pcol="17">${esc(personalType(account))}</td>
       <td data-pcol="18">${esc(personalValue(account, 'timezone_name'))}</td>
