@@ -345,6 +345,16 @@ const personalThresholdRemaining = account => {
     if (account?.funding_source_details && String(account.funding_source_details).trim()) return account.funding_source_details;
     return '—';
   };
+  const personalBillDate = account => {
+    const raw = account?.next_bill_date;
+    if (!raw) return '—';
+    const dt = new Date(raw);
+    if (isNaN(dt.getTime())) return String(raw);
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const yyyy = dt.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
   const personalDaysToBill = account => {
     if (!account?.next_bill_date) return '—';
     const days = Math.ceil((new Date(account.next_bill_date).getTime() - Date.now()) / 86400000);
@@ -381,7 +391,7 @@ const personalThresholdRemaining = account => {
       <td data-pcol="10">${esc(personalValue(account, 'owner'))}</td>
       <td data-pcol="11">${esc(personalFormatMoney(account, account.spend_cap))}</td>
       <td data-pcol="12">${esc(personalPayment(account))}</td>
-      <td data-pcol="13">${esc(date(account.next_bill_date))}</td>
+      <td data-pcol="13">${esc(personalBillDate(account))}</td>
       <td data-pcol="14">${esc(personalDaysToBill(account))}</td>
       <td data-pcol="15">${esc(personalValue(account, 'disable_reason'))}</td>
       <td data-pcol="16">${esc(date(account.created_time))}</td>
