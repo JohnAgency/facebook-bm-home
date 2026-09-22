@@ -431,7 +431,7 @@ const personalCurrencyDivisor = account => {
       return `<tr>
       <td data-pcol="0" class="check-col"><input type="checkbox" class="personal-select" data-account-id="${esc(accountId)}" aria-label="Chọn TKQC ${esc(accountId)}" ${selectedPersonalIds.has(accountId) ? 'checked' : ''}></td>
       <td data-pcol="1"><span class="${statusClass}">${esc(statusText)}</span></td>
-      <td data-pcol="2" class="name"><div class="name-main">${esc(personalValue(account, 'name'))}</div></td>
+      <td data-pcol="2" class="name"><div class="name-main" title="${esc(personalValue(account, 'name'))}"><a class="bm-name-link" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${encodeURIComponent(accountId.replace(/^act_/, ''))}" target="_blank" rel="noopener noreferrer">${esc(personalValue(account, 'name'))}</a></div></td>
       <td data-pcol="3">${esc(personalValue(account, 'account_id'))}</td>
       <td data-pcol="4">${esc(personalFormatMoney(account, account.balance))}</td>
       <td data-pcol="5">${esc(personalFormatMoney(account, personalThreshold(account)))}</td>
