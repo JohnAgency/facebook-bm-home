@@ -72,7 +72,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .status-closed{color:#87949a;font-weight:700}
 </style>
 <style>
-.load-menu-wrap{position:relative;z-index:5}.load-chevron{margin-left:7px;font-size:12px}.load-menu{position:absolute;top:38px;left:0;width:330px;padding:10px;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b}.load-menu[hidden]{display:none}.load-option{height:43px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:6px;background:#f7f7f7;color:#87949a;font-size:12px;cursor:pointer;margin-bottom:2px}.load-option.selected{background:#f4fffb;color:#526067;border:1px solid #12b886}.load-option input{display:none}.load-option span{flex:1}.load-option i{width:19px;height:19px;border:1px solid #d3d9d7;background:#fff;border-radius:50%;position:relative}.load-option.selected i{border-color:#12b886;box-shadow:inset 0 0 0 4px #fff;background:#12b886}.load-now{width:100%;height:38px;margin-top:7px;border:0;border-radius:6px;background:linear-gradient(180deg,#16c784,#08ae79);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.load-now:hover{filter:brightness(.97)}.load-remember{display:flex;align-items:center;gap:5px;margin-top:10px;color:#526067;font-size:11px;cursor:pointer}.load-remember input{accent-color:#10b981;width:16px;height:16px}
+.load-menu-wrap{position:relative;z-index:5}.load-chevron{margin-left:7px;font-size:12px}.load-menu{position:absolute;top:38px;left:0;width:330px;padding:10px;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b}.load-menu[hidden]{display:none}.load-option{height:43px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:6px;background:#f7f7f7;color:#87949a;font-size:12px;cursor:pointer;margin-bottom:2px}.load-option.selected{background:#f4fffb;color:#526067;border:1px solid #12b886}.load-option input{display:none}.load-option span{flex:1}.load-option i{width:19px;height:19px;border:1px solid #d3d9d7;background:#fff;border-radius:50%;position:relative}.load-option.selected i{border-color:#12b886;box-shadow:inset 0 0 0 4px #fff;background:#12b886}.load-ids-input{width:100%;min-height:86px;margin-top:4px;margin-bottom:6px;border:1px solid #d3d9d7;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box}.load-ids-input:focus{outline:none;border-color:#12b886}.load-ids-input[hidden]{display:none}.load-now{width:100%;height:38px;margin-top:7px;border:0;border-radius:6px;background:linear-gradient(180deg,#16c784,#08ae79);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.load-now:hover{filter:brightness(.97)}.load-remember{display:flex;align-items:center;gap:5px;margin-top:10px;color:#526067;font-size:11px;cursor:pointer}.load-remember input{accent-color:#10b981;width:16px;height:16px}
 </style>
 </head>
 <body>
@@ -85,7 +85,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 </aside>
 <main class="main">
   <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
-  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
+  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><textarea class="load-ids-input" id="loadIdsInput" placeholder="Điền list ID, mỗi ID cách nhau bằng dấu enter ..." hidden></textarea><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
   <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
   <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>Trạng thái tài khoản</th><th>Tài khoản</th><th>Số dư</th><th>Ngưỡng</th><th>Limit</th><th>Tổng tiêu</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
   <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
@@ -613,6 +613,41 @@ const personalCurrencyDivisor = account => {
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
   }
+  async function loadPersonalByIds(ids) {
+    personalNotice.innerHTML = `<div class="loading">Đang tải ${ids.length} tài khoản theo ID...</div>`;
+    personalBody.innerHTML = '';
+    personalAccounts = ids.map(id => ({ account_id: id }));
+    renderPersonal();
+    try {
+      await checkPersonalAccountsInBatches();
+      await checkPersonalSupplementInBatches();
+    } catch (error) {
+      personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải danh sách theo ID.')}</div>`;
+    }
+  }
+  async function loadPersonalByBmIds(bmIds) {
+    personalNotice.innerHTML = `<div class="loading">Đang tải TKQC theo ${bmIds.length} ID BM...</div>`;
+    personalBody.innerHTML = '';
+    try {
+      const ping = await send('PING');
+      if (!ping.success) throw new Error(ping.error);
+      const session = await send('CHECK_SESSION');
+      if (!session.success) throw new Error(session.error);
+      const response = await send('LOAD_PERSONAL_ACCOUNTS_BY_BM_IDS', { businessIds: bmIds });
+      if (!response.success) throw new Error(response.error);
+      personalAccounts = response.data?.accounts || [];
+      personalNotice.innerHTML = personalAccounts.length
+        ? `<div class="loading">Đã tải ${personalAccounts.length} TKQC theo ID BM. Đang chuẩn bị check chi tiết...</div>`
+        : '<div class="empty">Không tìm thấy TKQC nào theo ID BM đã nhập.</div>';
+      renderPersonal();
+      if (personalAccounts.length) {
+        await checkPersonalAccountsInBatches();
+        await checkPersonalSupplementInBatches();
+      }
+    } catch (error) {
+      personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC theo ID BM.')}</div>`;
+    }
+  }
   const switchTab = tab => {
     activeTab = tab;
     const isPersonal = tab === 'personal';
@@ -637,8 +672,10 @@ const personalCurrencyDivisor = account => {
   const loadMenu = document.getElementById('loadMenu');
   const loadMenuBtn = document.getElementById('loadMenuBtn');
   const loadNowBtn = document.getElementById('loadNowBtn');
+  const loadIdsInput = document.getElementById('loadIdsInput');
   let loadMode = localStorage.getItem('bm-load-mode') || 'all';
   const rememberLoadMode = document.getElementById('rememberLoadMode');
+  const syncLoadIdsVisibility = () => { loadIdsInput.hidden = loadMode === 'all'; loadIdsInput.placeholder = loadMode === 'bm' ? 'Điền list ID BM, mỗi ID cách nhau bằng dấu enter ...' : 'Điền list ID, mỗi ID cách nhau bằng dấu enter ...'; };
   document.querySelectorAll('input[name="loadMode"]').forEach(input => {
     input.checked = input.value === loadMode;
     input.closest('.load-option').classList.toggle('selected', input.checked);
@@ -646,25 +683,52 @@ const personalCurrencyDivisor = account => {
       loadMode = input.value;
       document.querySelectorAll('.load-option').forEach(option => option.classList.remove('selected'));
       input.closest('.load-option').classList.add('selected');
+      syncLoadIdsVisibility();
       if (rememberLoadMode.checked) localStorage.setItem('bm-load-mode', loadMode);
     });
   });
+  syncLoadIdsVisibility();
+  loadIdsInput.value = localStorage.getItem('bm-load-ids') || '';
   rememberLoadMode.checked = localStorage.getItem('bm-load-remember') === '1';
   rememberLoadMode.addEventListener('change', () => {
     localStorage.setItem('bm-load-remember', rememberLoadMode.checked ? '1' : '0');
-    if (rememberLoadMode.checked) localStorage.setItem('bm-load-mode', loadMode);
+    if (rememberLoadMode.checked) {
+      localStorage.setItem('bm-load-mode', loadMode);
+      localStorage.setItem('bm-load-ids', loadIdsInput.value);
+    } else {
+      localStorage.removeItem('bm-load-mode');
+      localStorage.removeItem('bm-load-ids');
+    }
   });
   loadMenuBtn.onclick = event => { event.stopPropagation(); loadMenu.hidden = !loadMenu.hidden; };
+  loadMenu.addEventListener('click', event => event.stopPropagation());
   document.addEventListener('click', event => { if (!event.target.closest('.load-menu-wrap')) loadMenu.hidden = true; });
+  const runLoad = (mode, idsRaw) => {
+    const ids = String(idsRaw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if (mode === 'id') {
+      if (!ids.length) { personalNotice.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID tài khoản.</div>'; return; }
+      if (activeTab !== 'personal') switchTab('personal');
+      return loadPersonalByIds(ids);
+    }
+    if (mode === 'bm') {
+      if (!ids.length) { personalNotice.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID Business Manager.</div>'; return; }
+      if (activeTab !== 'personal') switchTab('personal');
+      return loadPersonalByBmIds(ids);
+    }
+    return activeTab === 'personal' ? loadPersonal() : load();
+  };
   loadNowBtn.onclick = () => {
     loadMenu.hidden = true;
-    if (rememberLoadMode.checked) localStorage.setItem('bm-load-mode', loadMode);
-    if (loadMode === 'all') return activeTab === 'personal' ? loadPersonal() : load();
-    showNotice('loading', loadMode === 'id' ? 'Chức năng tải theo ID sẽ được bổ sung.' : 'Chức năng tải TKQC theo ID BM sẽ được bổ sung.');
+    if (rememberLoadMode.checked) {
+      localStorage.setItem('bm-load-mode', loadMode);
+      localStorage.setItem('bm-load-ids', loadIdsInput.value);
+    }
+    runLoad(loadMode, loadIdsInput.value);
   };
   search.oninput=()=>{bmPage=1;personalPage=1;activeTab==='personal'?renderPersonal():render();};
   document.getElementById('clearSearch').onclick=()=>{search.value='';bmPage=1;personalPage=1;activeTab==='personal'?renderPersonal():render();};
-  load();
+  if (rememberLoadMode.checked && loadMode !== 'all') runLoad(loadMode, loadIdsInput.value);
+  else load();
 })();
 </script>
 </body>
