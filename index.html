@@ -74,6 +74,36 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 <style>
 .load-menu-wrap{position:relative;z-index:5}.load-chevron{margin-left:7px;font-size:12px}.load-menu{position:absolute;top:38px;left:0;width:330px;padding:10px;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b}.load-menu[hidden]{display:none}.load-option{height:43px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:6px;background:#f7f7f7;color:#87949a;font-size:12px;cursor:pointer;margin-bottom:2px}.load-option.selected{background:#f4fffb;color:#526067;border:1px solid #12b886}.load-option input{display:none}.load-option span{flex:1}.load-option i{width:19px;height:19px;border:1px solid #d3d9d7;background:#fff;border-radius:50%;position:relative}.load-option.selected i{border-color:#12b886;box-shadow:inset 0 0 0 4px #fff;background:#12b886}.load-ids-input{width:100%;min-height:86px;margin-top:4px;margin-bottom:6px;border:1px solid #d3d9d7;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box}.load-ids-input:focus{outline:none;border-color:#12b886}.load-ids-input[hidden]{display:none}.load-now{width:100%;height:38px;margin-top:7px;border:0;border-radius:6px;background:linear-gradient(180deg,#16c784,#08ae79);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.load-now:hover{filter:brightness(.97)}.load-remember{display:flex;align-items:center;gap:5px;margin-top:10px;color:#526067;font-size:11px;cursor:pointer}.load-remember input{accent-color:#10b981;width:16px;height:16px}
 </style>
+<style>
+/* Chức năng - panel danh sách tính năng, kéo-thả sắp xếp, bật/tắt, khoá */
+.feature-menu-wrap{position:relative;z-index:5}
+.feature-badge{background:#eef2f1;color:#526067;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:6px;font-weight:700}
+.feature-menu{position:absolute;top:38px;right:0;width:340px;max-height:420px;display:flex;flex-direction:column;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b;overflow:hidden}
+.feature-menu[hidden]{display:none}
+.feature-menu-head{padding:10px 10px 6px;border-bottom:1px solid #edf2f0}
+.feature-search{width:100%;height:30px;border:1px solid #e0e7e5;border-radius:6px;padding:0 9px;font-size:12px;box-sizing:border-box}
+.feature-search:focus{outline:none;border-color:#12b886}
+.feature-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.feature-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #edf2f0;border-radius:8px;background:#fbfefd}
+.feature-item.dragging{opacity:.45}
+.feature-item.drag-over{border-color:#11b886;box-shadow:inset 0 0 0 1px #11b886}
+.feature-drag-handle{cursor:grab;color:#9bb8ae;font-size:12px;flex:0 0 auto}
+.feature-drag-handle:active{cursor:grabbing}
+.feature-icon{width:24px;height:24px;display:grid;place-items:center;border-radius:6px;background:#f0faf6;color:#059669;font-size:13px;flex:0 0 auto}
+.feature-name{flex:1;font-size:12px;color:#334155;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feature-lock{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#fff;background:#e08a1f;border-radius:12px;padding:3px 8px;flex:0 0 auto;white-space:nowrap}
+.feature-toggle{position:relative;width:34px;height:19px;border-radius:10px;background:#d8dfdd;flex:0 0 auto;cursor:pointer}
+.feature-toggle::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+.feature-toggle.on{background:#11b886}
+.feature-toggle.on::after{left:17px}
+.feature-info{color:#9bb8ae;cursor:help;font-size:12px;flex:0 0 auto}
+.feature-remove{color:#c7cfce;cursor:pointer;font-size:13px;flex:0 0 auto}
+.feature-remove:hover{color:#c24141}
+.feature-menu-foot{display:flex;justify-content:flex-end;padding:8px 10px;border-top:1px solid #edf2f0}
+.feature-add-btn{border:0;background:#11b886;color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:6px 10px;cursor:pointer}
+.feature-add-btn:hover{filter:brightness(.97)}
+.feature-empty{padding:14px;text-align:center;color:#7b878d;font-size:12px}
+</style>
 </head>
 <body>
 <div class="app">
@@ -85,7 +115,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 </aside>
 <main class="main">
   <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
-  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><textarea class="load-ids-input" id="loadIdsInput" placeholder="Điền list ID, mỗi ID cách nhau bằng dấu enter ..." hidden></textarea><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
+  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><textarea class="load-ids-input" id="loadIdsInput" placeholder="Điền list ID, mỗi ID cách nhau bằng dấu enter ..." hidden></textarea><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><div class="feature-menu-wrap" id="featureMenuWrap"><button class="tool" id="featureMenuBtn" type="button">☰ Chức năng<span class="feature-badge" id="featureBadge">0/0</span></button><div class="feature-menu" id="featureMenu" hidden><div class="feature-menu-head"><input class="feature-search" id="featureSearch" placeholder="Tìm tính năng..."/></div><div class="feature-list" id="featureList"></div><div class="feature-menu-foot"><button class="feature-add-btn" id="featureAddBtn" type="button">+ Thêm</button></div></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
   <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
   <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>Trạng thái tài khoản</th><th>Tài khoản</th><th>Số dư</th><th>Ngưỡng</th><th>Limit</th><th>Tổng tiêu</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
   <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
@@ -402,7 +432,16 @@ const personalCurrencyDivisor = account => {
     const debit = payment.payment_method_direct_debits?.display_string;
     const paypal = payment.payment_method_paypal?.email_address;
     if (card || debit || paypal) return card || debit || paypal;
-    if (account?.funding_source_details && String(account.funding_source_details).trim()) return account.funding_source_details;
+    const funding = account?.funding_source_details;
+    if (funding) {
+      // funding_source_details có thể là string thuần hoặc object {display_string, ...} tùy tài khoản,
+      // nên phải bóc display_string ra chứ không được ép String() trực tiếp (sẽ ra "[object Object]").
+      if (typeof funding === 'string' && funding.trim()) return funding;
+      if (typeof funding === 'object') {
+        const label = funding.display_string || funding.name || funding.type;
+        if (label) return label;
+      }
+    }
     return '—';
   };
   const personalBillDate = account => {
@@ -730,6 +769,153 @@ const personalCurrencyDivisor = account => {
   loadMenuBtn.onclick = event => { event.stopPropagation(); loadMenu.hidden = !loadMenu.hidden; };
   loadMenu.addEventListener('click', event => event.stopPropagation());
   document.addEventListener('click', event => { if (!event.target.closest('.load-menu-wrap')) loadMenu.hidden = true; });
+
+  // ===== Chức năng: panel danh sách tính năng, kéo-thả sắp xếp, bật/tắt, khoá =====
+  // Danh sách các chức năng quản lý BM sẽ bổ sung sau (mời/duyệt quyền/thêm user...).
+  // locked=true nghĩa là chưa nối API, hiển thị khoá; khi có API chỉ cần đổi locked:false.
+  const FEATURE_DEFS = [
+    { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: true, info: 'Xem và xử lý lời mời tham gia BM/TKQC đang chờ. Cần tích hợp API lời mời.' },
+    { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
+    { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: true, info: 'Mời user mới vào Business Manager kèm chọn quyền.' },
+    { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: true, info: 'Gán quyền truy cập TKQC cho user hoặc đối tác.' }
+  ];
+  const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
+  const featureOrderKey = 'bm-control-feature-order-v1';
+  const featureEnabledKey = 'bm-control-feature-enabled-v1';
+  const featureHiddenKey = 'bm-control-feature-hidden-v1';
+
+  let featureOrder = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(featureOrderKey) || 'null');
+      if (Array.isArray(saved)) {
+        const known = saved.filter(id => featureById.has(id));
+        const missing = FEATURE_DEFS.map(f => f.id).filter(id => !known.includes(id));
+        return [...known, ...missing]; // tính năng mới thêm sau này tự nối vào cuối
+      }
+    } catch {}
+    return FEATURE_DEFS.map(f => f.id);
+  })();
+  let featureEnabled = (() => { try { return JSON.parse(localStorage.getItem(featureEnabledKey) || '{}') || {}; } catch { return {}; } })();
+  let featureHidden = (() => {
+    try { const saved = JSON.parse(localStorage.getItem(featureHiddenKey) || 'null'); return Array.isArray(saved) ? new Set(saved) : new Set(); }
+    catch { return new Set(); }
+  })();
+
+  const featureMenuBtn = document.getElementById('featureMenuBtn');
+  const featureMenu = document.getElementById('featureMenu');
+  const featureList = document.getElementById('featureList');
+  const featureSearch = document.getElementById('featureSearch');
+  const featureBadge = document.getElementById('featureBadge');
+  const featureAddBtn = document.getElementById('featureAddBtn');
+
+  const renderFeatureBadge = () => {
+    const total = FEATURE_DEFS.length;
+    const on = FEATURE_DEFS.filter(f => !f.locked && featureEnabled[f.id]).length;
+    featureBadge.textContent = `${on}/${total}`;
+  };
+
+  const renderFeatureList = () => {
+    const query = featureSearch.value.trim().toLowerCase();
+    const visibleIds = featureOrder.filter(id => {
+      const f = featureById.get(id);
+      return f && !featureHidden.has(id) && f.name.toLowerCase().includes(query);
+    });
+
+    featureList.innerHTML = visibleIds.length
+      ? visibleIds.map(id => {
+          const f = featureById.get(id);
+          const on = !f.locked && !!featureEnabled[id];
+          return `<div class="feature-item" draggable="true" data-feature-id="${id}">
+            <span class="feature-drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
+            <span class="feature-icon">${f.icon}</span>
+            <span class="feature-name" title="${esc(f.name)}">${esc(f.name)}</span>
+            ${f.locked
+              ? `<span class="feature-lock">🔒 Đã khoá</span>`
+              : `<span class="feature-toggle ${on ? 'on' : ''}" data-feature-toggle="${id}"></span>`}
+            <span class="feature-info" title="${esc(f.info || '')}">ⓘ</span>
+            <span class="feature-remove" data-feature-remove="${id}" title="Ẩn khỏi danh sách">×</span>
+          </div>`;
+        }).join('')
+      : `<div class="feature-empty">Không có tính năng phù hợp.</div>`;
+
+    renderFeatureBadge();
+  };
+
+  renderFeatureList();
+
+  featureMenuBtn.onclick = event => {
+    event.stopPropagation();
+    const willOpen = featureMenu.hidden;
+    featureMenu.hidden = !featureMenu.hidden;
+    if (willOpen) { featureSearch.value = ''; renderFeatureList(); featureSearch.focus(); }
+  };
+  featureMenu.addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', event => { if (!event.target.closest('.feature-menu-wrap')) featureMenu.hidden = true; });
+
+  featureSearch.oninput = renderFeatureList;
+
+  featureList.addEventListener('click', event => {
+    const toggle = event.target.closest('[data-feature-toggle]');
+    if (toggle) {
+      const id = toggle.dataset.featureToggle;
+      featureEnabled[id] = !featureEnabled[id];
+      localStorage.setItem(featureEnabledKey, JSON.stringify(featureEnabled));
+      renderFeatureList();
+      return;
+    }
+    const remove = event.target.closest('[data-feature-remove]');
+    if (remove) {
+      featureHidden.add(remove.dataset.featureRemove);
+      localStorage.setItem(featureHiddenKey, JSON.stringify([...featureHidden]));
+      renderFeatureList();
+    }
+  });
+
+  featureAddBtn.onclick = event => {
+    event.stopPropagation();
+    if (!featureHidden.size) { alert('Không có tính năng nào đang bị ẩn.'); return; }
+    featureHidden.clear();
+    localStorage.setItem(featureHiddenKey, JSON.stringify([]));
+    renderFeatureList();
+  };
+
+  // Kéo-thả sắp xếp lại thứ tự card, cùng cơ chế với kéo cột bảng.
+  let draggingFeatureId = null;
+  featureList.addEventListener('dragstart', event => {
+    const item = event.target.closest('.feature-item');
+    if (!item) return;
+    draggingFeatureId = item.dataset.featureId;
+    item.classList.add('dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggingFeatureId);
+  });
+  featureList.addEventListener('dragend', () => {
+    featureList.querySelectorAll('.feature-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    draggingFeatureId = null;
+  });
+  featureList.addEventListener('dragover', event => {
+    const item = event.target.closest('.feature-item');
+    if (!item || !draggingFeatureId) return;
+    event.preventDefault();
+    featureList.querySelectorAll('.feature-item').forEach(el => el.classList.remove('drag-over'));
+    item.classList.add('drag-over');
+  });
+  featureList.addEventListener('drop', event => {
+    const item = event.target.closest('.feature-item');
+    if (!item) return;
+    event.preventDefault();
+    const targetId = item.dataset.featureId;
+    const fromId = event.dataTransfer.getData('text/plain');
+    if (!fromId || fromId === targetId) return;
+    const next = featureOrder.filter(id => id !== fromId);
+    const targetIndex = next.indexOf(targetId);
+    next.splice(targetIndex < 0 ? next.length : targetIndex, 0, fromId);
+    featureOrder = next;
+    localStorage.setItem(featureOrderKey, JSON.stringify(featureOrder));
+    renderFeatureList();
+  });
+  // ===== Hết phần Chức năng =====
+
   const runLoad = (mode, idsRaw) => {
     const ids = String(idsRaw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     if (mode === 'id') {
