@@ -173,6 +173,10 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     applyPersonalColumnOrder();
   };
  const notice = document.getElementById('notice'); const count = document.getElementById('count'); const drawer = document.getElementById('drawer'); const search = document.getElementById('search'); const prevPage = document.getElementById('prevPage'); const nextPage = document.getElementById('nextPage'); const pageInfo = document.getElementById('pageInfo'); const PAGE_SIZE = 50; let bmPage=1; let personalPage=1; const selectedPersonalIds = new Set(); let businesses=[]; let personalAccounts=[]; let activeTab='bm';
+  // Mỗi lần bắt đầu 1 phiên tải TKQC cá nhân (Tải tất cả / Tải theo ID / Tải TKQC theo ID BM)
+  // sẽ tăng token này lên. Các vòng check batch đang chạy dở của phiên cũ sẽ tự dừng
+  // khi thấy token của mình không còn khớp personalLoadToken, tránh chạy chồng lên nhau.
+  let personalLoadToken = 0;
   const esc = (v) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const send = (action,payload={}) => new Promise((resolve,reject)=>{ if(!extensionId)return reject(new Error('Hãy mở website bằng nút Trang chủ trong extension.')); chrome.runtime.sendMessage(extensionId,{source:'BM_DASHBOARD',action,requestId:crypto.randomUUID(),...payload},response=>{ if(chrome.runtime.lastError)return reject(new Error(chrome.runtime.lastError.message)); if(!response)return reject(new Error('Extension không trả về dữ liệu.')); resolve(response); }); });
   const arrCount = x => Array.isArray(x?.data)?x.data.length:(Array.isArray(x)?x.length:0);
@@ -505,7 +509,7 @@ const personalCurrencyDivisor = account => {
     visiblePersonalRows().forEach(account => { const id = String(account.account_id || account.id || ''); if (event.target.checked) selectedPersonalIds.add(id); else selectedPersonalIds.delete(id); });
     renderPersonal();
   });
-  async function checkPersonalAccountsInBatches() {
+  async function checkPersonalAccountsInBatches(loadToken) {
     const batchSize = 25;
     const concurrency = 2;
     const batches = [];
@@ -517,6 +521,7 @@ const personalCurrencyDivisor = account => {
     let completed = 0;
     const runWorker = async () => {
       while (nextBatch < batches.length) {
+        if (loadToken !== personalLoadToken) return; // có phiên tải mới hơn -> dừng ngay, không render/ghi đè nữa
         const batchIndex = nextBatch++;
         const batch = batches[batchIndex];
         const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
@@ -526,6 +531,7 @@ const personalCurrencyDivisor = account => {
 
         try {
           const response = await send('CHECK_PERSONAL_ACCOUNTS_BATCH', { accountIds });
+          if (loadToken !== personalLoadToken) return; // phiên đã bị hủy trong lúc chờ response -> bỏ kết quả này
           if (!response.success) throw new Error(response.error || 'Check batch TKQC thất bại.');
           const checked = response.data?.accounts || [];
           const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
@@ -536,6 +542,7 @@ const personalCurrencyDivisor = account => {
             account.__checking = false;
           });
         } catch (error) {
+          if (loadToken !== personalLoadToken) return;
           batch.forEach(account => {
             account.__checking = false;
             account.__detailError = error.message || 'Không check được TKQC.';
@@ -551,9 +558,10 @@ const personalCurrencyDivisor = account => {
     await Promise.all(
       Array.from({ length: Math.min(concurrency, batches.length) }, runWorker)
     );
+    if (loadToken !== personalLoadToken) return;
     personalNotice.innerHTML = `<div class="loading">Đã hoàn tất kiểm tra ${personalAccounts.length} TKQC.</div>`;
   }
-  async function checkPersonalSupplementInBatches() {
+  async function checkPersonalSupplementInBatches(loadToken) {
     const batchSize = 25;
     const concurrency = 2;
     const batches = [];
@@ -562,12 +570,14 @@ const personalCurrencyDivisor = account => {
     let completed = 0;
     const runWorker = async () => {
       while (nextBatch < batches.length) {
+        if (loadToken !== personalLoadToken) return;
         const batch = batches[nextBatch++];
         const accountIds = batch.map(account => String(account.account_id || account.id || '')).filter(Boolean);
         batch.forEach(account => { account.__supplementChecking = true; });
         renderPersonal();
         try {
           const response = await send('CHECK_PERSONAL_ACCOUNTS_SUPPLEMENT_BATCH', { accountIds });
+          if (loadToken !== personalLoadToken) return;
           if (!response.success) throw new Error(response.error || 'Check bổ sung TKQC thất bại.');
           const checked = response.data?.accounts || [];
           const checkedMap = new Map(checked.map(account => [String(account.account_id || account.id), account]));
@@ -577,6 +587,7 @@ const personalCurrencyDivisor = account => {
             account.__supplementChecking = false;
           });
         } catch (error) {
+          if (loadToken !== personalLoadToken) return;
           batch.forEach(account => {
             account.__supplementChecking = false;
             account.__supplementError = error.message || 'Không check được dữ liệu bổ sung.';
@@ -588,17 +599,22 @@ const personalCurrencyDivisor = account => {
       }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, runWorker));
+    if (loadToken !== personalLoadToken) return;
     personalNotice.innerHTML = `<div class="loading">Đã hoàn tất check bổ sung ${personalAccounts.length} TKQC.</div>`;
   }
   async function loadPersonal() {
+    const loadToken = ++personalLoadToken; // hủy mọi phiên check đang chạy dở trước đó
     personalNotice.innerHTML = '<div class="loading">Đang tải danh sách TKQC cá nhân...</div>';
     personalBody.innerHTML = '';
     try {
       const ping = await send('PING');
+      if (loadToken !== personalLoadToken) return;
       if (!ping.success) throw new Error(ping.error);
       const session = await send('CHECK_SESSION');
+      if (loadToken !== personalLoadToken) return;
       if (!session.success) throw new Error(session.error);
       const response = await send('LOAD_PERSONAL_ACCOUNTS_LIST');
+      if (loadToken !== personalLoadToken) return;
       if (!response.success) throw new Error(response.error);
       personalAccounts = response.data?.accounts || [];
       personalNotice.innerHTML = personalAccounts.length
@@ -606,34 +622,43 @@ const personalCurrencyDivisor = account => {
         : '<div class="empty">Chưa có TKQC cá nhân.</div>';
       renderPersonal();
       if (personalAccounts.length) {
-        await checkPersonalAccountsInBatches();
-        await checkPersonalSupplementInBatches();
+        await checkPersonalAccountsInBatches(loadToken);
+        if (loadToken !== personalLoadToken) return;
+        await checkPersonalSupplementInBatches(loadToken);
       }
     } catch (error) {
+      if (loadToken !== personalLoadToken) return;
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC cá nhân.')}</div>`;
     }
   }
   async function loadPersonalByIds(ids) {
+    const loadToken = ++personalLoadToken; // hủy mọi phiên check đang chạy dở trước đó
     personalNotice.innerHTML = `<div class="loading">Đang tải ${ids.length} tài khoản theo ID...</div>`;
     personalBody.innerHTML = '';
     personalAccounts = ids.map(id => ({ account_id: id }));
     renderPersonal();
     try {
-      await checkPersonalAccountsInBatches();
-      await checkPersonalSupplementInBatches();
+      await checkPersonalAccountsInBatches(loadToken);
+      if (loadToken !== personalLoadToken) return;
+      await checkPersonalSupplementInBatches(loadToken);
     } catch (error) {
+      if (loadToken !== personalLoadToken) return;
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải danh sách theo ID.')}</div>`;
     }
   }
   async function loadPersonalByBmIds(bmIds) {
+    const loadToken = ++personalLoadToken; // hủy mọi phiên check đang chạy dở trước đó
     personalNotice.innerHTML = `<div class="loading">Đang tải TKQC theo ${bmIds.length} ID BM...</div>`;
     personalBody.innerHTML = '';
     try {
       const ping = await send('PING');
+      if (loadToken !== personalLoadToken) return;
       if (!ping.success) throw new Error(ping.error);
       const session = await send('CHECK_SESSION');
+      if (loadToken !== personalLoadToken) return;
       if (!session.success) throw new Error(session.error);
       const response = await send('LOAD_PERSONAL_ACCOUNTS_BY_BM_IDS', { businessIds: bmIds });
+      if (loadToken !== personalLoadToken) return;
       if (!response.success) throw new Error(response.error);
       personalAccounts = response.data?.accounts || [];
       personalNotice.innerHTML = personalAccounts.length
@@ -641,10 +666,12 @@ const personalCurrencyDivisor = account => {
         : '<div class="empty">Không tìm thấy TKQC nào theo ID BM đã nhập.</div>';
       renderPersonal();
       if (personalAccounts.length) {
-        await checkPersonalAccountsInBatches();
-        await checkPersonalSupplementInBatches();
+        await checkPersonalAccountsInBatches(loadToken);
+        if (loadToken !== personalLoadToken) return;
+        await checkPersonalSupplementInBatches(loadToken);
       }
     } catch (error) {
+      if (loadToken !== personalLoadToken) return;
       personalNotice.innerHTML = `<div class="error">${esc(error.message || 'Không thể tải TKQC theo ID BM.')}</div>`;
     }
   }
