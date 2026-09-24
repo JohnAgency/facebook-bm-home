@@ -1071,7 +1071,7 @@ featureSortBtn.onclick = () => {
   renderFeatureList();
 };
 
-featureList.addEventListener('click', event => {
+featureList.addEventListener('click', async event => {
 
   // Toggle tính năng
   const toggle = event.target.closest('[data-feature-toggle]');
@@ -1087,6 +1087,86 @@ featureList.addEventListener('click', event => {
     );
 
     renderFeatureList();
+
+    // Khi bật "Lời mời chờ duyệt"
+    if (id === 'invites' && featureEnabled[id]) {
+
+      const box = document.getElementById('pendingInvitesBox');
+
+      if (!box) return;
+
+      // Kiểm tra BM đang được chọn
+      if (!selectedIds || selectedIds.size === 0) {
+        box.innerHTML = `
+          <div class="feature-empty">
+            Vui lòng chọn ít nhất 1 BM trong bảng TK BM.
+          </div>
+        `;
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="loading">
+          Đang tải lời mời...
+        </div>
+      `;
+
+      try {
+
+        const results = [];
+
+        for (const businessId of selectedIds) {
+
+          try {
+
+            const response = await send(
+              'LOAD_PENDING_INVITES',
+              {
+                businessId
+              }
+            );
+
+            results.push({
+              businessId,
+              ...response
+            });
+
+          } catch (error) {
+
+            results.push({
+              businessId,
+              success: false,
+              error: error?.message || String(error)
+            });
+
+          }
+        }
+
+        console.log(
+          '📩 KẾT QUẢ LỜI MỜI CHỜ DUYỆT:',
+          results
+        );
+
+        box.innerHTML = `
+          <div class="add-user-result">
+            Đã tải dữ liệu của ${results.length} BM.
+            <br>
+            Mở Console (F12) để xem dữ liệu trả về.
+          </div>
+        `;
+
+      } catch (error) {
+
+        box.innerHTML = `
+          <div class="error">
+            ${esc(error.message || String(error))}
+          </div>
+        `;
+      }
+
+      return;
+    }
+
     return;
   }
 
