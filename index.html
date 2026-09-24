@@ -1061,18 +1061,15 @@ const personalCurrencyDivisor = account => {
   renderFeatureList();
 
   // Panel giờ luôn hiển thị cố định bên phải (không còn là dropdown ẩn/hiện),
-  // nên chỉ cần wiring cho tìm kiếm, sắp xếp lại mặc định và các nút trong từng card.
-  featureSearch.oninput = renderFeatureList;
+// nên chỉ cần wiring cho tìm kiếm, sắp xếp lại mặc định và các nút trong từng card.
+featureSearch.oninput = renderFeatureList;
 
-  featureSortBtn.onclick = () => {
-    // "Sắp xếp": đưa thứ tự card về đúng thứ tự khai báo gốc trong FEATURE_DEFS.
-    featureOrder = FEATURE_DEFS.map(f => f.id);
-    localStorage.setItem(featureOrderKey, JSON.stringify(featureOrder));
-    renderFeatureList();
-  };
-
-
- featureSearch.oninput = renderFeatureList;
+featureSortBtn.onclick = () => {
+  // "Sắp xếp": đưa thứ tự card về đúng thứ tự khai báo gốc trong FEATURE_DEFS.
+  featureOrder = FEATURE_DEFS.map(f => f.id);
+  localStorage.setItem(featureOrderKey, JSON.stringify(featureOrder));
+  renderFeatureList();
+};
 
 featureList.addEventListener('click', event => {
 
