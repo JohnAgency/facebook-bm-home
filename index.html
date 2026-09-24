@@ -886,7 +886,7 @@ const personalCurrencyDivisor = account => {
   // Danh sách các chức năng quản lý BM sẽ bổ sung sau (mời/duyệt quyền/thêm user...).
   // locked=true nghĩa là chưa nối API, hiển thị khoá; khi có API chỉ cần đổi locked:false.
   const FEATURE_DEFS = [
-  { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: true, info: 'Xem và xử lý lời mời tham gia BM/TKQC đang chờ. Cần tích hợp API lời mời.' },
+  { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: false, info: 'Xem và xử lý lời mời tham gia BM/TKQC đang chờ. Cần tích hợp API lời mời.' },
   { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
   { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
   { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: true, info: 'Gán quyền truy cập TKQC cho user hoặc đối tác.' }
@@ -1035,6 +1035,15 @@ const personalCurrencyDivisor = account => {
             </div>
           `;
         }
+      if (id === 'invites' && on) {
+  html += `
+    <div class="feature-inline-form" id="pendingInvitesBox">
+      <div class="loading">
+        Đang tải lời mời...
+      </div>
+    </div>
+  `;
+}
 
         return html;
       }).join('')
