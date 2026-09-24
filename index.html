@@ -75,15 +75,21 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .load-menu-wrap{position:relative;z-index:5}.load-chevron{margin-left:7px;font-size:12px}.load-menu{position:absolute;top:38px;left:0;width:330px;padding:10px;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b}.load-menu[hidden]{display:none}.load-option{height:43px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:6px;background:#f7f7f7;color:#87949a;font-size:12px;cursor:pointer;margin-bottom:2px}.load-option.selected{background:#f4fffb;color:#526067;border:1px solid #12b886}.load-option input{display:none}.load-option span{flex:1}.load-option i{width:19px;height:19px;border:1px solid #d3d9d7;background:#fff;border-radius:50%;position:relative}.load-option.selected i{border-color:#12b886;box-shadow:inset 0 0 0 4px #fff;background:#12b886}.load-ids-input{width:100%;min-height:86px;margin-top:4px;margin-bottom:6px;border:1px solid #d3d9d7;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box}.load-ids-input:focus{outline:none;border-color:#12b886}.load-ids-input[hidden]{display:none}.load-now{width:100%;height:38px;margin-top:7px;border:0;border-radius:6px;background:linear-gradient(180deg,#16c784,#08ae79);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.load-now:hover{filter:brightness(.97)}.load-remember{display:flex;align-items:center;gap:5px;margin-top:10px;color:#526067;font-size:11px;cursor:pointer}.load-remember input{accent-color:#10b981;width:16px;height:16px}
 </style>
 <style>
-/* Chức năng - panel danh sách tính năng, kéo-thả sắp xếp, bật/tắt, khoá */
-.feature-menu-wrap{position:relative;z-index:5}
+/* Layout: bảng bên trái + cột "Chức năng" cố định bên phải, giống Business Suite tham chiếu */
+.body-row{flex:1;min-height:0;display:flex;overflow:hidden}
+.content-col{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.content-col .content{padding:10px 10px 0}
+.feature-panel{width:320px;flex:0 0 320px;background:#fff;border-left:1px solid #dfeae6;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.feature-panel-head{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 12px;border-bottom:1px solid #edf2f0;flex-wrap:wrap}
+.feature-panel-title{font-size:13px;font-weight:700;color:#263238;display:flex;align-items:center;white-space:nowrap}
+.feature-panel-actions{display:flex;gap:6px}
+.feature-sort-btn{border:1px solid #e0e7e5;background:#fff;border-radius:6px;padding:5px 8px;font-size:10px;color:#526067;cursor:pointer;white-space:nowrap}
+.feature-sort-btn:hover{border-color:#8edbc4;color:#059669}
 .feature-badge{background:#eef2f1;color:#526067;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:6px;font-weight:700}
-.feature-menu{position:absolute;top:38px;right:0;width:340px;max-height:420px;display:flex;flex-direction:column;background:#fff;border:1px solid #b9e4d7;border-radius:9px;box-shadow:0 12px 28px #17483c2b;overflow:hidden}
-.feature-menu[hidden]{display:none}
-.feature-menu-head{padding:10px 10px 6px;border-bottom:1px solid #edf2f0}
+.feature-search-wrap{padding:10px 12px 6px}
 .feature-search{width:100%;height:30px;border:1px solid #e0e7e5;border-radius:6px;padding:0 9px;font-size:12px;box-sizing:border-box}
 .feature-search:focus{outline:none;border-color:#12b886}
-.feature-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.feature-list{flex:1;min-height:0;overflow-y:auto;padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px}
 .feature-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #edf2f0;border-radius:8px;background:#fbfefd}
 .feature-item.dragging{opacity:.45}
 .feature-item.drag-over{border-color:#11b886;box-shadow:inset 0 0 0 1px #11b886}
@@ -99,10 +105,8 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .feature-info{color:#9bb8ae;cursor:help;font-size:12px;flex:0 0 auto}
 .feature-remove{color:#c7cfce;cursor:pointer;font-size:13px;flex:0 0 auto}
 .feature-remove:hover{color:#c24141}
-.feature-menu-foot{display:flex;justify-content:flex-end;padding:8px 10px;border-top:1px solid #edf2f0}
-.feature-add-btn{border:0;background:#11b886;color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:6px 10px;cursor:pointer}
-.feature-add-btn:hover{filter:brightness(.97)}
 .feature-empty{padding:14px;text-align:center;color:#7b878d;font-size:12px}
+@media(max-width:1100px){.feature-panel{display:none}}
 </style>
 </head>
 <body>
@@ -115,10 +119,22 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 </aside>
 <main class="main">
   <div class="top-tabs"><button class="tab" id="personalTab">TK Cá nhân</button><button class="tab active" id="bmTab">TK BM</button><button class="tab" id="pageTab">Page</button></div>
-  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><textarea class="load-ids-input" id="loadIdsInput" placeholder="Điền list ID, mỗi ID cách nhau bằng dấu enter ..." hidden></textarea><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><div class="feature-menu-wrap" id="featureMenuWrap"><button class="tool" id="featureMenuBtn" type="button">☰ Chức năng<span class="feature-badge" id="featureBadge">0/0</span></button><div class="feature-menu" id="featureMenu" hidden><div class="feature-menu-head"><input class="feature-search" id="featureSearch" placeholder="Tìm tính năng..."/></div><div class="feature-list" id="featureList"></div><div class="feature-menu-foot"><button class="feature-add-btn" id="featureAddBtn" type="button">+ Thêm</button></div></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
-  <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
-  <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>Trạng thái tài khoản</th><th>Tài khoản</th><th>Số dư</th><th>Ngưỡng</th><th>Limit</th><th>Tổng tiêu</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
-  <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
+  <div class="toolbar"><div class="load-menu-wrap"><button class="tool primary" id="loadMenuBtn" type="button">▣ &nbsp; Tải tài khoản <span class="load-chevron">▾</span></button><div class="load-menu" id="loadMenu" hidden><label class="load-option selected"><input type="radio" name="loadMode" value="all" checked><span>Tải tất cả tài khoản</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="id"><span>Tải theo ID</span><i></i></label><label class="load-option"><input type="radio" name="loadMode" value="bm"><span>Tải TKQC theo ID BM</span><i></i></label><textarea class="load-ids-input" id="loadIdsInput" placeholder="Điền list ID, mỗi ID cách nhau bằng dấu enter ..." hidden></textarea><button class="load-now" id="loadNowBtn" type="button">Tải ngay</button><label class="load-remember"><input type="checkbox" id="rememberLoadMode"> Ghi nhớ tùy chọn này và tự động tải cho lần sau</label></div></div><input class="search" id="search" placeholder="⌕  Tìm kiếm tài khoản"/><button class="tool" id="clearSearch" title="Xóa tìm kiếm">↻</button></div>
+  <div class="body-row">
+    <div class="content-col">
+      <div class="content" id="bmView"><div id="notice"></div><div class="table-shell"><table class="bm-table"><thead><tr><th class="check-col" data-col="select"><input type="checkbox" id="selectAllBms" aria-label="Chọn tất cả BM"></th><th data-col="status"><button class="sort-btn" data-sort="status">Trạng thái <span>↕</span></button></th><th data-col="name"><button class="sort-btn" data-sort="name">Tên BM <span>↕</span></button></th><th data-col="type"><button class="sort-btn" data-sort="type">Loại BM <span>↕</span></button></th><th data-col="ownership"><button class="sort-btn" data-sort="ownership">Quyền sở hữu <span>↕</span></button></th><th data-col="limit"><button class="sort-btn" data-sort="limit">Limit <span>↕</span></button></th><th data-col="verified"><button class="sort-btn" data-sort="verified">Verified <span>↕</span></button></th><th data-col="created"><button class="sort-btn" data-sort="created">Created <span>↕</span></button></th><th data-col="admins"><button class="sort-btn" data-sort="admins">SL Admin <span>↕</span></button></th><th data-col="accounts"><button class="sort-btn" data-sort="accounts">SL Adaccount <span>↕</span></button></th><th data-col="root"><button class="sort-btn" data-sort="root">ID gốc <span>↕</span></button></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
+      <div class="content" id="personalView" style="display:none"><div id="personalNotice"></div><div class="table-shell"><table class="bm-table personal-table"><thead><tr><th class="check-col"><input type="checkbox" id="selectAllPersonal" aria-label="Chọn tất cả TKQC"></th><th>Trạng thái tài khoản</th><th>Tài khoản</th><th>Số dư</th><th>Ngưỡng</th><th>Limit</th><th>Tổng tiêu</th><th>Tiền tệ</th><th>Quyền sở hữu</th><th>Giới hạn chi tiêu</th><th>PT thanh toán</th><th>Ngày lập hóa đơn</th><th>Số ngày đến kỳ TT</th><th>Lý do bị khóa</th><th>Ngày tạo tài khoản</th><th>Loại TK</th><th>Múi giờ TK</th><th>Được tạo từ BM</th><th>Quốc gia TKQC</th></tr></thead><tbody id="personalBody"></tbody></table></div></div>
+      <div class="footer"><div><strong id="count">0</strong> <span id="countLabel">Tài khoản BM</span></div><div class="footer-actions"><button class="page-btn" id="prevPage" type="button">‹ Trước</button><span class="page-info" id="pageInfo">Trang 1/1</span><button class="page-btn" id="nextPage" type="button">Tiếp ›</button></div></div>
+    </div>
+    <aside class="feature-panel">
+      <div class="feature-panel-head">
+        <span class="feature-panel-title">☰ Chức năng<span class="feature-badge" id="featureBadge">0/0</span></span>
+        <div class="feature-panel-actions"><button class="feature-sort-btn" id="featureSortBtn" type="button">☰ Sắp xếp</button><button class="feature-add-btn" id="featureAddBtn" type="button">+ Thêm</button></div>
+      </div>
+      <div class="feature-search-wrap"><input class="feature-search" id="featureSearch" placeholder="Tìm tính năng..."/></div>
+      <div class="feature-list" id="featureList"></div>
+    </aside>
+  </div>
 </main>
 </div>
 <div id="drawer" class="detail-drawer"></div>
@@ -801,12 +817,11 @@ const personalCurrencyDivisor = account => {
     catch { return new Set(); }
   })();
 
-  const featureMenuBtn = document.getElementById('featureMenuBtn');
-  const featureMenu = document.getElementById('featureMenu');
   const featureList = document.getElementById('featureList');
   const featureSearch = document.getElementById('featureSearch');
   const featureBadge = document.getElementById('featureBadge');
   const featureAddBtn = document.getElementById('featureAddBtn');
+  const featureSortBtn = document.getElementById('featureSortBtn');
 
   const renderFeatureBadge = () => {
     const total = FEATURE_DEFS.length;
@@ -843,14 +858,17 @@ const personalCurrencyDivisor = account => {
 
   renderFeatureList();
 
-  featureMenuBtn.onclick = event => {
-    event.stopPropagation();
-    const willOpen = featureMenu.hidden;
-    featureMenu.hidden = !featureMenu.hidden;
-    if (willOpen) { featureSearch.value = ''; renderFeatureList(); featureSearch.focus(); }
+  // Panel giờ luôn hiển thị cố định bên phải (không còn là dropdown ẩn/hiện),
+  // nên chỉ cần wiring cho tìm kiếm, sắp xếp lại mặc định và các nút trong từng card.
+  featureSearch.oninput = renderFeatureList;
+
+  featureSortBtn.onclick = () => {
+    // "Sắp xếp": đưa thứ tự card về đúng thứ tự khai báo gốc trong FEATURE_DEFS.
+    featureOrder = FEATURE_DEFS.map(f => f.id);
+    localStorage.setItem(featureOrderKey, JSON.stringify(featureOrder));
+    renderFeatureList();
   };
-  featureMenu.addEventListener('click', event => event.stopPropagation());
-  document.addEventListener('click', event => { if (!event.target.closest('.feature-menu-wrap')) featureMenu.hidden = true; });
+
 
   featureSearch.oninput = renderFeatureList;
 
