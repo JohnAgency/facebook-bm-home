@@ -105,6 +105,10 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .feature-info{color:#9bb8ae;cursor:help;font-size:12px;flex:0 0 auto}
 .feature-remove{color:#c7cfce;cursor:pointer;font-size:13px;flex:0 0 auto}
 .feature-remove:hover{color:#c24141}
+.feature-item-action{cursor:pointer}
+.feature-item-action:hover{border-color:#8edbc4;background:#f4fffb}
+.feature-open-arrow{color:#9bb8ae;font-size:16px;font-weight:700;flex:0 0 auto}
+.feature-item-action:hover .feature-open-arrow{color:#059669}
 .feature-empty{padding:14px;text-align:center;color:#7b878d;font-size:12px}
 @media(max-width:1100px){.feature-panel{display:none}}
 .add-user-form{margin-top:14px;display:flex;flex-direction:column;gap:4px}
@@ -904,13 +908,16 @@ const personalCurrencyDivisor = account => {
       ? visibleIds.map(id => {
           const f = featureById.get(id);
           const on = !f.locked && !!featureEnabled[id];
-          return `<div class="feature-item" draggable="true" data-feature-id="${id}" ${!f.locked && f.openKey ? `data-feature-open="${f.openKey}"` : ''}>
+          const isAction = !f.locked && f.openKey; // loại "hành động" (mở form) không dùng toggle bật/tắt
+          return `<div class="feature-item ${isAction ? 'feature-item-action' : ''}" draggable="true" data-feature-id="${id}" ${isAction ? `data-feature-open="${f.openKey}"` : ''}>
             <span class="feature-drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
             <span class="feature-icon">${f.icon}</span>
             <span class="feature-name" title="${esc(f.name)}">${esc(f.name)}</span>
             ${f.locked
               ? `<span class="feature-lock">🔒 Đã khoá</span>`
-              : `<span class="feature-toggle ${on ? 'on' : ''}" data-feature-toggle="${id}"></span>`}
+              : isAction
+                ? `<span class="feature-open-arrow" title="Bấm để mở">›</span>`
+                : `<span class="feature-toggle ${on ? 'on' : ''}" data-feature-toggle="${id}"></span>`}
             <span class="feature-info" title="${esc(f.info || '')}">ⓘ</span>
             <span class="feature-remove" data-feature-remove="${id}" title="Ẩn khỏi danh sách">×</span>
           </div>`;
