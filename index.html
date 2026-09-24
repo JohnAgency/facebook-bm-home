@@ -325,7 +325,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
         const results = Array.isArray(response.data?.results) ? response.data.results : [];
         resultBox.innerHTML = results.length
           ? `<table class="mini"><thead><tr><th>BM</th><th>Email</th><th>Kết quả</th></tr></thead><tbody>${
-              results.map(r => `<tr><td>${esc(r.businessId)}</td><td>${esc(r.email)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã mời' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+              results.map(r => `<tr><td>${esc(r.businessId)}</td><td>${esc(r.email)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã mời thành công' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
             }</tbody></table>`
           : '<div class="empty">Không nhận được kết quả nào.</div>';
       } catch (error) {
