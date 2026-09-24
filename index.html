@@ -119,6 +119,34 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-select{width:100%;height:34px;border:1px solid #e0e7e5;border-radius:6px;padding:0 8px;font-size:12px;background:#fff}
 .add-user-result{margin-top:12px}
 .add-user-result table.mini td,.add-user-result table.mini th{font-size:11px}
+  .feature-inline-form{
+  margin: -1px 0 4px;
+  padding: 10px;
+  border: 1px solid #dfeae6;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-item-enabled{
+  border-color: #8edbc4;
+  background: #f4fffb;
+}
+
+.feature-inline-form .form-textarea{
+  min-height: 65px;
+}
+
+.feature-inline-form .form-label{
+  margin-top: 6px;
+}
+
+.feature-inline-form .add-user-hint{
+  margin-bottom: 4px;
+}
 </style>
 </head>
 <body>
@@ -858,11 +886,11 @@ const personalCurrencyDivisor = account => {
   // Danh sách các chức năng quản lý BM sẽ bổ sung sau (mời/duyệt quyền/thêm user...).
   // locked=true nghĩa là chưa nối API, hiển thị khoá; khi có API chỉ cần đổi locked:false.
   const FEATURE_DEFS = [
-    { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: true, info: 'Xem và xử lý lời mời tham gia BM/TKQC đang chờ. Cần tích hợp API lời mời.' },
-    { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
-    { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, openKey: 'add-bm-user', info: 'Bấm để mở form mời email vào 1 hoặc nhiều Business Manager.' },
-    { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: true, info: 'Gán quyền truy cập TKQC cho user hoặc đối tác.' }
-  ];
+  { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: true, info: 'Xem và xử lý lời mời tham gia BM/TKQC đang chờ. Cần tích hợp API lời mời.' },
+  { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
+  { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
+  { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: true, info: 'Gán quyền truy cập TKQC cho user hoặc đối tác.' }
+];
   const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
   const featureOrderKey = 'bm-control-feature-order-v1';
   const featureEnabledKey = 'bm-control-feature-enabled-v1';
@@ -898,34 +926,128 @@ const personalCurrencyDivisor = account => {
   };
 
   const renderFeatureList = () => {
-    const query = featureSearch.value.trim().toLowerCase();
-    const visibleIds = featureOrder.filter(id => {
-      const f = featureById.get(id);
-      return f && !featureHidden.has(id) && f.name.toLowerCase().includes(query);
-    });
+  const query = featureSearch.value.trim().toLowerCase();
 
-    featureList.innerHTML = visibleIds.length
-      ? visibleIds.map(id => {
-          const f = featureById.get(id);
-          const on = !f.locked && !!featureEnabled[id];
-          const isAction = !f.locked && f.openKey; // loại "hành động" (mở form) không dùng toggle bật/tắt
-          return `<div class="feature-item ${isAction ? 'feature-item-action' : ''}" draggable="true" data-feature-id="${id}" ${isAction ? `data-feature-open="${f.openKey}"` : ''}>
+  const visibleIds = featureOrder.filter(id => {
+    const f = featureById.get(id);
+    return f && !featureHidden.has(id) && f.name.toLowerCase().includes(query);
+  });
+
+  featureList.innerHTML = visibleIds.length
+    ? visibleIds.map(id => {
+        const f = featureById.get(id);
+        const on = !f.locked && !!featureEnabled[id];
+
+        let html = `
+          <div class="feature-item ${on ? 'feature-item-enabled' : ''}"
+               draggable="true"
+               data-feature-id="${id}">
+
             <span class="feature-drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
-            <span class="feature-icon">${f.icon}</span>
-            <span class="feature-name" title="${esc(f.name)}">${esc(f.name)}</span>
-            ${f.locked
-              ? `<span class="feature-lock">🔒 Đã khoá</span>`
-              : isAction
-                ? `<span class="feature-open-arrow" title="Bấm để mở">›</span>`
-                : `<span class="feature-toggle ${on ? 'on' : ''}" data-feature-toggle="${id}"></span>`}
-            <span class="feature-info" title="${esc(f.info || '')}">ⓘ</span>
-            <span class="feature-remove" data-feature-remove="${id}" title="Ẩn khỏi danh sách">×</span>
-          </div>`;
-        }).join('')
-      : `<div class="feature-empty">Không có tính năng phù hợp.</div>`;
 
-    renderFeatureBadge();
-  };
+            <span class="feature-icon">${f.icon}</span>
+
+            <span class="feature-name" title="${esc(f.name)}">
+              ${esc(f.name)}
+            </span>
+        `;
+
+        if (f.locked) {
+          html += `
+            <span class="feature-lock">🔒 Đã khoá</span>
+          `;
+        } else {
+          html += `
+            <span
+              class="feature-toggle ${on ? 'on' : ''}"
+              data-feature-toggle="${id}"
+              title="${on ? 'Tắt' : 'Bật'}">
+            </span>
+          `;
+        }
+
+        html += `
+            <span class="feature-info" title="${esc(f.info || '')}">ⓘ</span>
+
+            <span
+              class="feature-remove"
+              data-feature-remove="${id}"
+              title="Ẩn khỏi danh sách">
+              ×
+            </span>
+
+          </div>
+        `;
+
+        // Form thêm người dùng nằm NGAY BÊN DƯỚI card
+        if (id === 'add-bm-user' && on) {
+          const preselected = [...selectedIds];
+          const prefillIds = preselected.join('\n');
+
+          html += `
+            <div class="feature-inline-form">
+
+              ${preselected.length ? `
+                <div class="add-user-hint">
+                  Đã điền sẵn ${preselected.length} BM bạn đang chọn ở bảng TK BM — có thể sửa lại.
+                </div>
+              ` : ''}
+
+              <label class="form-label">
+                ID Business Manager
+              </label>
+
+              <textarea
+                id="addUserBmIds"
+                class="form-textarea"
+                placeholder="Điền ID BM, mỗi ID 1 dòng..."
+              >${esc(prefillIds)}</textarea>
+
+              <label class="form-label">
+                Email người được mời
+              </label>
+
+              <textarea
+                id="addUserEmails"
+                class="form-textarea"
+                placeholder="vd: partner@gmail.com"
+              ></textarea>
+
+              <label class="form-label">
+                Vai trò
+              </label>
+
+              <select id="addUserRole" class="form-select">
+                <option value="EMPLOYEE">Nhân viên (Employee)</option>
+                <option value="ADMIN">Quản trị viên (Admin)</option>
+              </select>
+
+              <button
+                id="addUserSubmit"
+                class="load-now"
+                type="button"
+                style="margin-top:12px">
+                Gửi lời mời
+              </button>
+
+              <div id="addUserResult" class="add-user-result"></div>
+
+            </div>
+          `;
+        }
+
+        return html;
+      }).join('')
+    : `<div class="feature-empty">Không có tính năng phù hợp.</div>`;
+
+  renderFeatureBadge();
+
+  // Gắn lại nút Gửi lời mời sau khi form được render
+  const submitBtn = document.getElementById('addUserSubmit');
+  if (submitBtn) {
+    submitBtn.onclick = submitAddBmUsers;
+  }
+};
 
   renderFeatureList();
 
@@ -960,11 +1082,45 @@ const personalCurrencyDivisor = account => {
       return;
     }
     if (event.target.closest('.feature-drag-handle')) return; // chỉ để kéo, không mở form
-    const openItem = event.target.closest('.feature-item[data-feature-open]');
-    if (openItem) {
-      const openKey = openItem.dataset.featureOpen;
-      if (openKey === 'add-bm-user') openAddBmUserDrawer();
-    }
+    featureList.addEventListener('click', event => {
+
+  // Toggle tính năng
+  const toggle = event.target.closest('[data-feature-toggle]');
+
+  if (toggle) {
+    const id = toggle.dataset.featureToggle;
+
+    featureEnabled[id] = !featureEnabled[id];
+
+    localStorage.setItem(
+      featureEnabledKey,
+      JSON.stringify(featureEnabled)
+    );
+
+    renderFeatureList();
+    return;
+  }
+
+  // Ẩn tính năng
+  const remove = event.target.closest('[data-feature-remove]');
+
+  if (remove) {
+    featureHidden.add(remove.dataset.featureRemove);
+
+    localStorage.setItem(
+      featureHiddenKey,
+      JSON.stringify([...featureHidden])
+    );
+
+    renderFeatureList();
+    return;
+  }
+
+  // Không làm gì khi bấm vào vùng kéo
+  if (event.target.closest('.feature-drag-handle')) {
+    return;
+  }
+});
   });
 
   featureAddBtn.onclick = event => {
