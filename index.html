@@ -119,82 +119,6 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-select{width:100%;height:34px;border:1px solid #e0e7e5;border-radius:6px;padding:0 8px;font-size:12px;background:#fff}
 .add-user-result{margin-top:12px}
 .add-user-result table.mini td,.add-user-result table.mini th{font-size:11px}
-  .feature-item {
-  position: relative;
-}
-
-.feature-item-expanded {
-  flex-wrap: wrap;
-}
-
-.feature-inline-form {
-  width: 100%;
-  margin: 8px 0 2px 32px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #f7f9fc;
-  border: 1px solid #e5e9f0;
-  box-sizing: border-box;
-}
-
-.feature-inline-form-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 10px;
-}
-
-.feature-inline-form .form-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: #667085;
-  margin: 8px 0 5px;
-}
-
-.feature-inline-form .form-textarea {
-  width: 100%;
-  min-height: 58px;
-  resize: vertical;
-  box-sizing: border-box;
-  padding: 8px 9px;
-  border: 1px solid #d9dee8;
-  border-radius: 7px;
-  background: #fff;
-  font-size: 12px;
-  outline: none;
-}
-
-.feature-inline-form .form-textarea:focus,
-.feature-inline-form .form-select:focus {
-  border-color: #4f8cff;
-}
-
-.feature-inline-form .form-select {
-  width: 100%;
-  height: 34px;
-  box-sizing: border-box;
-  padding: 0 8px;
-  border: 1px solid #d9dee8;
-  border-radius: 7px;
-  background: #fff;
-  font-size: 12px;
-  outline: none;
-}
-
-.feature-inline-submit {
-  width: 100%;
-  margin-top: 10px !important;
-  height: 34px;
-  border-radius: 7px;
-}
-
-.feature-inline-form .add-user-result {
-  margin-top: 8px;
-  font-size: 12px;
-  max-height: 220px;
-  overflow: auto;
-}
 </style>
 </head>
 <body>
@@ -401,7 +325,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
         const results = Array.isArray(response.data?.results) ? response.data.results : [];
         resultBox.innerHTML = results.length
           ? `<table class="mini"><thead><tr><th>BM</th><th>Email</th><th>Kết quả</th></tr></thead><tbody>${
-              results.map(r => `<tr><td>${esc(r.businessId)}</td><td>${esc(r.email)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã mời thành công' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+              results.map(r => `<tr><td>${esc(r.businessId)}</td><td>${esc(r.email)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã mời' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
             }</tbody></table>`
           : '<div class="empty">Không nhận được kết quả nào.</div>';
       } catch (error) {
@@ -967,91 +891,41 @@ const personalCurrencyDivisor = account => {
   const featureAddBtn = document.getElementById('featureAddBtn');
   const featureSortBtn = document.getElementById('featureSortBtn');
 
+  const renderFeatureBadge = () => {
+    const total = FEATURE_DEFS.length;
+    const on = FEATURE_DEFS.filter(f => !f.locked && featureEnabled[f.id]).length;
+    featureBadge.textContent = `${on}/${total}`;
+  };
+
   const renderFeatureList = () => {
-  const query = featureSearch.value.trim().toLowerCase();
-  const visibleIds = featureOrder.filter(id => {
-    const f = featureById.get(id);
-    return f && !featureHidden.has(id) && f.name.toLowerCase().includes(query);
-  });
+    const query = featureSearch.value.trim().toLowerCase();
+    const visibleIds = featureOrder.filter(id => {
+      const f = featureById.get(id);
+      return f && !featureHidden.has(id) && f.name.toLowerCase().includes(query);
+    });
 
-  featureList.innerHTML = visibleIds.length
-    ? visibleIds.map(id => {
-        const f = featureById.get(id);
-        const on = !f.locked && !!featureEnabled[id];
-
-        // Riêng "Thêm người dùng vào BM" dùng toggle để xổ form
-        const isAddBmUser = id === 'add-bm-user';
-
-        // Các chức năng action khác vẫn giữ kiểu mở form cũ
-        const isAction = !f.locked && f.openKey && !isAddBmUser;
-
-        return `
-          <div class="feature-item ${isAction ? 'feature-item-action' : ''} ${isAddBmUser && on ? 'feature-item-expanded' : ''}"
-               draggable="true"
-               data-feature-id="${id}"
-               ${isAction ? `data-feature-open="${f.openKey}"` : ''}>
-
+    featureList.innerHTML = visibleIds.length
+      ? visibleIds.map(id => {
+          const f = featureById.get(id);
+          const on = !f.locked && !!featureEnabled[id];
+          const isAction = !f.locked && f.openKey; // loại "hành động" (mở form) không dùng toggle bật/tắt
+          return `<div class="feature-item ${isAction ? 'feature-item-action' : ''}" draggable="true" data-feature-id="${id}" ${isAction ? `data-feature-open="${f.openKey}"` : ''}>
             <span class="feature-drag-handle" title="Kéo để sắp xếp">⋮⋮</span>
-
             <span class="feature-icon">${f.icon}</span>
-
             <span class="feature-name" title="${esc(f.name)}">${esc(f.name)}</span>
-
             ${f.locked
               ? `<span class="feature-lock">🔒 Đã khoá</span>`
               : isAction
                 ? `<span class="feature-open-arrow" title="Bấm để mở">›</span>`
                 : `<span class="feature-toggle ${on ? 'on' : ''}" data-feature-toggle="${id}"></span>`}
-
             <span class="feature-info" title="${esc(f.info || '')}">ⓘ</span>
-
             <span class="feature-remove" data-feature-remove="${id}" title="Ẩn khỏi danh sách">×</span>
+          </div>`;
+        }).join('')
+      : `<div class="feature-empty">Không có tính năng phù hợp.</div>`;
 
-            ${isAddBmUser && on ? `
-              <div class="feature-inline-form" data-inline-form="add-bm-user">
-
-                <div class="feature-inline-form-title">
-                  Mời người dùng vào Business Manager
-                </div>
-
-                <label class="form-label">ID Business Manager</label>
-                <textarea
-                  id="addUserBmIds"
-                  class="form-textarea"
-                  placeholder="Nhập ID BM, mỗi ID một dòng..."
-                ></textarea>
-
-                <label class="form-label">Email người được mời</label>
-                <textarea
-                  id="addUserEmails"
-                  class="form-textarea"
-                  placeholder="Nhập email, mỗi email một dòng..."
-                ></textarea>
-
-                <label class="form-label">Vai trò</label>
-                <select id="addUserRole" class="form-select">
-                  <option value="EMPLOYEE">Nhân viên (Employee)</option>
-                  <option value="ADMIN">Quản trị viên (Admin)</option>
-                </select>
-
-                <button
-                  id="addUserSubmit"
-                  class="load-now feature-inline-submit"
-                  type="button"
-                >
-                  Gửi lời mời
-                </button>
-
-                <div id="addUserResult" class="add-user-result"></div>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('')
-    : `<div class="feature-empty">Không có tính năng phù hợp.</div>`;
-
-  renderFeatureBadge();
-};
+    renderFeatureBadge();
+  };
 
   renderFeatureList();
 
@@ -1088,12 +962,9 @@ const personalCurrencyDivisor = account => {
     if (event.target.closest('.feature-drag-handle')) return; // chỉ để kéo, không mở form
     const openItem = event.target.closest('.feature-item[data-feature-open]');
     if (openItem) {
-  const openKey = openItem.dataset.featureOpen;
-
-  if (openKey === 'add-bm-user') {
-    openAddBmUserDrawer();
-  }
-}
+      const openKey = openItem.dataset.featureOpen;
+      if (openKey === 'add-bm-user') openAddBmUserDrawer();
+    }
   });
 
   featureAddBtn.onclick = event => {
