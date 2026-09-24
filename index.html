@@ -293,7 +293,11 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
           <textarea id="addUserBmIds" class="form-textarea" placeholder="Điền ID BM, mỗi ID 1 dòng...">${esc(prefillIds)}</textarea>
           <label class="form-label">Email người được mời (mỗi email 1 dòng)</label>
           <textarea id="addUserEmails" class="form-textarea" placeholder="vd: partner@gmail.com"></textarea>
-         
+          <label class="form-label">Vai trò</label>
+          <select id="addUserRole" class="form-select">
+            <option value="EMPLOYEE">Nhân viên (Employee)</option>
+            <option value="ADMIN">Quản trị viên (Admin)</option>
+          </select>
           <button id="addUserSubmit" class="load-now" type="button" style="margin-top:12px">Gửi lời mời</button>
           <div id="addUserResult" class="add-user-result"></div>
         </div>`;
