@@ -1072,26 +1072,9 @@ const personalCurrencyDivisor = account => {
   };
 
 
-  featureSearch.oninput = renderFeatureList;
+ featureSearch.oninput = renderFeatureList;
 
-  featureList.addEventListener('click', event => {
-    const toggle = event.target.closest('[data-feature-toggle]');
-    if (toggle) {
-      const id = toggle.dataset.featureToggle;
-      featureEnabled[id] = !featureEnabled[id];
-      localStorage.setItem(featureEnabledKey, JSON.stringify(featureEnabled));
-      renderFeatureList();
-      return;
-    }
-    const remove = event.target.closest('[data-feature-remove]');
-    if (remove) {
-      featureHidden.add(remove.dataset.featureRemove);
-      localStorage.setItem(featureHiddenKey, JSON.stringify([...featureHidden]));
-      renderFeatureList();
-      return;
-    }
-    if (event.target.closest('.feature-drag-handle')) return; // chỉ để kéo, không mở form
-    featureList.addEventListener('click', event => {
+featureList.addEventListener('click', event => {
 
   // Toggle tính năng
   const toggle = event.target.closest('[data-feature-toggle]');
@@ -1129,8 +1112,8 @@ const personalCurrencyDivisor = account => {
   if (event.target.closest('.feature-drag-handle')) {
     return;
   }
+
 });
-  });
 
   featureAddBtn.onclick = event => {
     event.stopPropagation();
