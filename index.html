@@ -155,6 +155,15 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-inline-btn:hover{filter:brightness(.97)}
 .form-inline-btn:disabled{opacity:.6;cursor:wait}
 .debug-raw{max-height:220px;overflow:auto;background:#f7fcfa;border:1px solid #e0efea;border-radius:6px;padding:8px;font-size:10px;white-space:pre-wrap;margin-top:6px}
+.invite-row{border:1px solid #edf2f0;border-radius:7px;padding:8px 10px;margin-bottom:6px;background:#fbfefd}
+.invite-summary{font-size:11px;color:#334155;line-height:1.4}
+.invite-meta{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.invite-status{font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px}
+.invite-status-pending{background:#fdf1de;color:#c98a12}
+.invite-status-approved{background:#e6f7ee;color:#16894e}
+.invite-status-declined{background:#fdeaea;color:#df3d3d}
+.invite-status-canceled{background:#eef1f0;color:#87949a}
+.invite-date{font-size:10px;color:#9bb8ae}
 </style>
 </head>
 <body>
@@ -349,29 +358,42 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     // ===== Hết form "Thêm người dùng vào BM" =====
 
     // ===== "Lời mời chờ duyệt" — gọi LOAD_PENDING_INVITES theo 1 ID BM =====
-    // Response là GraphQL nội bộ của Facebook, cấu trúc thực tế chưa được xác nhận —
-    // hàm dưới đây thử vài đường dẫn phổ biến, nếu không khớp sẽ hiện JSON thô để
-    // xem cấu trúc thật rồi tinh chỉnh lại cho đúng.
+    // Cấu trúc thật: data.business.unified_business_requests_mbs.edges[].node
+    // Mỗi node đã có sẵn "list_summary_content.text" — 1 câu mô tả tiếng Việt do
+    // Facebook tự sinh (VD: "Bạn đã yêu cầu thêm ... vào doanh nghiệp này...") nên
+    // dùng thẳng câu đó làm nội dung chính, khỏi phải tự ghép field rời rạc.
+    const INVITE_STATUS_INFO = {
+      PENDING: { label: 'Đang chờ', cls: 'invite-status-pending' },
+      APPROVED: { label: 'Đã duyệt', cls: 'invite-status-approved' },
+      DECLINED: { label: 'Đã từ chối', cls: 'invite-status-declined' },
+      CANCELED: { label: 'Đã huỷ', cls: 'invite-status-canceled' },
+      EXPIRED: { label: 'Hết hạn', cls: 'invite-status-canceled' },
+      FAILED: { label: 'Thất bại', cls: 'invite-status-declined' }
+    };
+    const inviteStatusInfo = status => INVITE_STATUS_INFO[status] || { label: status || '—', cls: 'invite-status-canceled' };
+
     const extractBusinessRequests = data => {
-      const candidatePaths = [
-        data?.data?.business?.business_requests?.edges,
-        data?.data?.business_by_id?.business_requests?.edges,
-        data?.data?.node?.business_requests?.edges
-      ];
-      for (const edges of candidatePaths) {
-        if (Array.isArray(edges)) {
-          return edges.map(edge => {
-            const n = edge?.node || {};
-            return {
-              type: n.request_type || n.type || '—',
-              target: n.email || n.recipient?.name || n.recipient_business?.name || n.target_name || '—',
-              status: n.status || '—',
-              created: n.creation_time ? new Date(n.creation_time * 1000).toLocaleDateString('vi-VN') : '—'
-            };
-          });
-        }
-      }
-      return null;
+      const edges = data?.data?.business?.unified_business_requests_mbs?.edges;
+      if (!Array.isArray(edges)) return null;
+      return edges.map(edge => {
+        const n = edge?.node || {};
+        const bmObj = n.bm_request_object || {};
+        // Đối tượng liên quan tuỳ loại request: email được mời / tên TKQC-Page được yêu cầu / tên BM-người yêu cầu.
+        const target =
+          bmObj.business_role_request?.invited_email ||
+          bmObj.request_object?.name ||
+          bmObj.business_user_requestor?.name ||
+          bmObj.requestor_business?.name ||
+          n.requestor?.name ||
+          '—';
+        return {
+          summary: n.list_summary_content?.text || '',
+          type: n.request_type || n.__typename || '—',
+          target,
+          status: n.status || '',
+          created: n.creation_time ? new Date(n.creation_time * 1000).toLocaleDateString('vi-VN') : '—'
+        };
+      });
     };
 
     const loadPendingInvitesForBm = async bmId => {
@@ -394,9 +416,13 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
           return;
         }
         resultBox.innerHTML = requests.length
-          ? `<table class="mini"><thead><tr><th>Loại</th><th>Đối tượng</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead><tbody>${
-              requests.map(r => `<tr><td>${esc(r.type)}</td><td>${esc(r.target)}</td><td>${esc(r.status)}</td><td>${esc(r.created)}</td></tr>`).join('')
-            }</tbody></table>`
+          ? requests.map(r => {
+              const st = inviteStatusInfo(r.status);
+              return `<div class="invite-row">
+                <div class="invite-summary">${esc(r.summary || r.target)}</div>
+                <div class="invite-meta"><span class="invite-status ${st.cls}">${esc(st.label)}</span><span class="invite-date">${esc(r.created)}</span></div>
+              </div>`;
+            }).join('')
           : '<div class="empty">Không có lời mời/yêu cầu nào.</div>';
       } catch (error) {
         resultBox.innerHTML = `<div class="error">${esc(error.message || 'Không lấy được danh sách lời mời.')}</div>`;
