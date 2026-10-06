@@ -164,6 +164,11 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .invite-status-declined{background:#fdeaea;color:#df3d3d}
 .invite-status-canceled{background:#eef1f0;color:#87949a}
 .invite-date{font-size:10px;color:#9bb8ae}
+.invite-meta{flex-wrap:wrap;gap:6px}
+.invite-approve-btn{margin-left:auto;border:0;background:#11b886;color:#fff;font-size:10px;font-weight:700;border-radius:12px;padding:4px 10px;cursor:pointer}
+.invite-approve-btn:hover{filter:brightness(.97)}
+.invite-approve-btn:disabled{opacity:.6;cursor:wait}
+.invite-approve-error{margin-top:6px;color:#df3d3d;font-size:10px}
 </style>
 </head>
 <body>
@@ -391,9 +396,45 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
           type: n.request_type || n.__typename || '—',
           target,
           status: n.status || '',
-          created: n.creation_time ? new Date(n.creation_time * 1000).toLocaleDateString('vi-VN') : '—'
+          created: n.creation_time ? new Date(n.creation_time * 1000).toLocaleDateString('vi-VN') : '—',
+          // requestId: id dạng số (dùng cho REST-style API); relayId: id GraphQL global (base64) —
+          // giữ cả 2 để khi có API phê duyệt thật thì dùng đúng cái API đó cần, không phải sửa lại chỗ trích xuất.
+          requestId: n.request_id || bmObj.id || '',
+          relayId: n.id || ''
         };
       });
+    };
+
+    // Nút "Phê duyệt" gọi qua đây — hiện đang là khung chờ API thật, bạn gửi API xong
+    // mình chỉ cần đổi phần fetch bên trong hàm này (hoặc thêm action mới bên background.js),
+    // không cần đụng lại phần hiển thị/danh sách phía trên.
+    const approveBusinessRequest = async (bmId, request, buttonEl) => {
+      buttonEl.disabled = true;
+      buttonEl.textContent = 'Đang duyệt...';
+      const row = buttonEl.closest('.invite-row');
+      try {
+        const response = await send('APPROVE_BUSINESS_REQUEST', {
+          businessId: bmId,
+          requestId: request.requestId,
+          relayId: request.relayId,
+          requestType: request.type
+        });
+        if (!response.success) throw new Error(response.error || 'Phê duyệt thất bại.');
+        // Duyệt xong thì bỏ luôn dòng đó khỏi danh sách "đang chờ" cho gọn.
+        if (row) row.remove();
+      } catch (error) {
+        buttonEl.disabled = false;
+        buttonEl.textContent = 'Phê duyệt';
+        if (row) {
+          let errBox = row.querySelector('.invite-approve-error');
+          if (!errBox) {
+            errBox = document.createElement('div');
+            errBox.className = 'invite-approve-error';
+            row.appendChild(errBox);
+          }
+          errBox.textContent = error.message || 'Phê duyệt thất bại.';
+        }
+      }
     };
 
     const loadPendingInvitesForBm = async bmId => {
@@ -409,21 +450,37 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
         const response = await send('LOAD_PENDING_INVITES', { businessId: bmId });
         if (!response.success) throw new Error(response.error || 'Không lấy được danh sách lời mời.');
 
-        const requests = extractBusinessRequests(response.data);
-        if (requests === null) {
+        const allRequests = extractBusinessRequests(response.data);
+        if (allRequests === null) {
           // Chưa nhận diện được đường dẫn dữ liệu -> hiện JSON thô để đối chiếu cấu trúc thật.
           resultBox.innerHTML = `<div class="loading">Đã nhận dữ liệu nhưng chưa nhận diện được cấu trúc — gửi lại phần này cho mình để tinh chỉnh:</div><pre class="debug-raw">${esc(JSON.stringify(response.data, null, 2).slice(0, 4000))}</pre>`;
           return;
         }
+
+        // Chỉ giữ lại các request đang thật sự chờ phê duyệt.
+        const requests = allRequests.filter(r => r.status === 'PENDING');
+
         resultBox.innerHTML = requests.length
-          ? requests.map(r => {
+          ? requests.map((r, index) => {
               const st = inviteStatusInfo(r.status);
-              return `<div class="invite-row">
+              return `<div class="invite-row" data-invite-index="${index}">
                 <div class="invite-summary">${esc(r.summary || r.target)}</div>
-                <div class="invite-meta"><span class="invite-status ${st.cls}">${esc(st.label)}</span><span class="invite-date">${esc(r.created)}</span></div>
+                <div class="invite-meta">
+                  <span class="invite-status ${st.cls}">${esc(st.label)}</span>
+                  <span class="invite-date">${esc(r.created)}</span>
+                  <button type="button" class="invite-approve-btn" data-invite-index="${index}">Phê duyệt</button>
+                </div>
               </div>`;
             }).join('')
-          : '<div class="empty">Không có lời mời/yêu cầu nào.</div>';
+          : '<div class="empty">Không có yêu cầu nào đang chờ phê duyệt.</div>';
+
+        // Gắn sự kiện cho từng nút Phê duyệt (đóng gói request tương ứng theo index).
+        resultBox.querySelectorAll('.invite-approve-btn').forEach(btn => {
+          btn.onclick = () => {
+            const req = requests[Number(btn.dataset.inviteIndex)];
+            if (req) approveBusinessRequest(bmId, req, btn);
+          };
+        });
       } catch (error) {
         resultBox.innerHTML = `<div class="error">${esc(error.message || 'Không lấy được danh sách lời mời.')}</div>`;
       } finally {
