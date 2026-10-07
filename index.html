@@ -1193,7 +1193,7 @@ const personalCurrencyDivisor = account => {
             const prefillAdIds = preselectedAds.join('\n');
             html += `<div class="feature-inline-form">
               ${preselectedAds.length ? `<div class="add-user-hint">Đã điền sẵn ${preselectedAds.length} TKQC bạn đang chọn ở bảng TK Cá nhân — có thể sửa lại.</div>` : ''}
-              <label class="form-label">ID tài khoản quảng cáo (mỗi ID 1 dòng, có/không "act_" đều được)</label>
+              <label class="form-label">ID tài khoản quảng cáo (mỗi ID 1 dòng)</label>
               <textarea id="shareAdAccountIds" class="form-textarea" placeholder="Điền ID TKQC, mỗi ID 1 dòng...">${esc(prefillAdIds)}</textarea>
               <label class="form-label">ID Business đối tác nhận chia sẻ (mỗi ID 1 dòng)</label>
               <textarea id="sharePartnerBmIds" class="form-textarea" placeholder="Điền ID BM đối tác, mỗi ID 1 dòng..."></textarea>
