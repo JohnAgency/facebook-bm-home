@@ -445,34 +445,61 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     // Nút "Phê duyệt" gọi qua đây — hiện đang là khung chờ API thật, bạn gửi API xong
     // mình chỉ cần đổi phần fetch bên trong hàm này (hoặc thêm action mới bên background.js),
     // không cần đụng lại phần hiển thị/danh sách phía trên.
-    const approveBusinessRequest = async (bmId, request, buttonEl) => {
-      buttonEl.disabled = true;
-      buttonEl.textContent = 'Đang duyệt...';
-      const row = buttonEl.closest('.invite-row');
-      try {
-        const response = await send('APPROVE_BUSINESS_REQUEST', {
-          businessId: bmId,
-          requestId: request.requestId,
-          relayId: request.relayId,
-          requestType: request.type
-        });
-        if (!response.success) throw new Error(response.error || 'Phê duyệt thất bại.');
-        // Duyệt xong thì bỏ luôn dòng đó khỏi danh sách "đang chờ" cho gọn.
-        if (row) row.remove();
-      } catch (error) {
-        buttonEl.disabled = false;
-        buttonEl.textContent = 'Phê duyệt';
-        if (row) {
-          let errBox = row.querySelector('.invite-approve-error');
-          if (!errBox) {
-            errBox = document.createElement('div');
-            errBox.className = 'invite-approve-error';
-            row.appendChild(errBox);
-          }
-          errBox.textContent = error.message || 'Phê duyệt thất bại.';
-        }
+    const handleBusinessRequestAction = async (
+  action,
+  bmId,
+  request,
+  buttonEl
+) => {
+  const isApprove = action === 'approve';
+  const defaultText = isApprove ? 'Phê duyệt' : 'Từ chối';
+  const loadingText = isApprove ? 'Đang duyệt...' : 'Đang từ chối...';
+  const errorText = isApprove
+    ? 'Phê duyệt thất bại.'
+    : 'Từ chối thất bại.';
+
+  buttonEl.disabled = true;
+  buttonEl.textContent = loadingText;
+
+  const row = buttonEl.closest('.invite-row');
+
+  try {
+    const response = await send(
+      isApprove
+        ? 'APPROVE_BUSINESS_REQUEST'
+        : 'REJECT_BUSINESS_REQUEST',
+      {
+        businessId: bmId,
+        requestId: request.requestId,
+        relayId: request.relayId,
+        requestType: request.type
       }
-    };
+    );
+
+    if (!response.success) {
+      throw new Error(response.error || errorText);
+    }
+
+    // Phê duyệt hoặc từ chối thành công thì xóa request khỏi danh sách
+    if (row) row.remove();
+  } catch (error) {
+    buttonEl.disabled = false;
+    buttonEl.textContent = defaultText;
+
+    if (row) {
+      let errBox = row.querySelector('.invite-request-error');
+
+      if (!errBox) {
+        errBox = document.createElement('div');
+        errBox.className = 'invite-request-error';
+        row.appendChild(errBox);
+      }
+
+      errBox.textContent = error.message || errorText;
+    }
+  }
+};
+
 
     const loadPendingInvitesForBm = async bmId => {
       const resultBox = document.getElementById('pendingInvitesResult');
@@ -506,6 +533,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
                   <span class="invite-status ${st.cls}">${esc(st.label)}</span>
                   <span class="invite-date">${esc(r.created)}</span>
                   <button type="button" class="invite-approve-btn" data-invite-index="${index}">Phê duyệt</button>
+                  <button type="button" class="invite-reject-btn" data-invite-index="${index}">Từ chối</button>
                 </div>
               </div>`;
             }).join('')
@@ -513,11 +541,35 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 
         // Gắn sự kiện cho từng nút Phê duyệt (đóng gói request tương ứng theo index).
         resultBox.querySelectorAll('.invite-approve-btn').forEach(btn => {
-          btn.onclick = () => {
-            const req = requests[Number(btn.dataset.inviteIndex)];
-            if (req) approveBusinessRequest(bmId, req, btn);
-          };
-        });
+  btn.onclick = () => {
+    const req = requests[Number(btn.dataset.inviteIndex)];
+
+    if (req) {
+      handleBusinessRequestAction(
+        'approve',
+        bmId,
+        req,
+        btn
+      );
+    }
+  };
+});
+
+resultBox.querySelectorAll('.invite-reject-btn').forEach(btn => {
+  btn.onclick = () => {
+    const req = requests[Number(btn.dataset.inviteIndex)];
+
+    if (req) {
+      handleBusinessRequestAction(
+        'reject',
+        bmId,
+        req,
+        btn
+      );
+    }
+  };
+});
+
       } catch (error) {
         resultBox.innerHTML = `<div class="error">${esc(error.message || 'Không lấy được danh sách lời mời.')}</div>`;
       } finally {
