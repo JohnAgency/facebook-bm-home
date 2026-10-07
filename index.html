@@ -362,6 +362,43 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     };
     // ===== Hết form "Thêm người dùng vào BM" =====
 
+    // ===== Form "Cấp quyền TKQC" (chia sẻ TKQC cho Business đối tác) =====
+    const SHARE_PERMISSION_TASKS = {
+      full: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
+      analyze: ['ANALYZE']
+    };
+
+    const submitSharePartner = async () => {
+      const adAccountIds = document.getElementById('shareAdAccountIds').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const partnerIds = document.getElementById('sharePartnerBmIds').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const permissionKey = document.getElementById('sharePermission').value;
+      const permittedTasks = SHARE_PERMISSION_TASKS[permissionKey] || SHARE_PERMISSION_TASKS.analyze;
+      const resultBox = document.getElementById('shareResult');
+      const submitBtn = document.getElementById('shareSubmit');
+
+      if (!adAccountIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID TKQC.</div>'; return; }
+      if (!partnerIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID Business đối tác.</div>'; return; }
+
+      submitBtn.disabled = true;
+      resultBox.innerHTML = `<div class="loading">Đang chia sẻ ${adAccountIds.length * partnerIds.length} lượt...</div>`;
+
+      try {
+        const response = await send('SHARE_AD_ACCOUNTS_TO_PARTNER', { adAccountIds, partnerBusinessIds: partnerIds, permittedTasks });
+        if (!response.success) throw new Error(response.error || 'Chia sẻ thất bại.');
+        const results = Array.isArray(response.data?.results) ? response.data.results : [];
+        resultBox.innerHTML = results.length
+          ? `<table class="mini"><thead><tr><th>TKQC</th><th>BM đối tác</th><th>Kết quả</th></tr></thead><tbody>${
+              results.map(r => `<tr><td>${esc(r.adAccountId)}</td><td>${esc(r.partnerId)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã chia sẻ' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+            }</tbody></table>`
+          : '<div class="empty">Không nhận được kết quả nào.</div>';
+      } catch (error) {
+        resultBox.innerHTML = `<div class="error">${esc(error.message || 'Chia sẻ thất bại.')}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+    // ===== Hết form "Cấp quyền TKQC" =====
+
     // ===== "Lời mời chờ duyệt" — gọi LOAD_PENDING_INVITES theo 1 ID BM =====
     // Cấu trúc thật: data.business.unified_business_requests_mbs.edges[].node
     // Mỗi node đã có sẵn "list_summary_content.text" — 1 câu mô tả tiếng Việt do
@@ -1014,7 +1051,7 @@ const personalCurrencyDivisor = account => {
   { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: false, info: 'Bật để xem lời mời/yêu cầu đang chờ của 1 BM.' },
   { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
   { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
-  { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: true, info: 'Gán quyền truy cập TKQC cho user hoặc đối tác.' }
+  { id: 'grant-ad-access', icon: '🔑', name: 'Cấp quyền TKQC', locked: false, info: 'Bật để chia sẻ 1 hoặc nhiều TKQC cho Business đối tác (cấp quyền quản lý/xem báo cáo).' }
 ];
   const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
   const featureOrderKey = 'bm-control-feature-order-v1';
@@ -1094,6 +1131,26 @@ const personalCurrencyDivisor = account => {
             </div>`;
           }
 
+          // Form "Cấp quyền TKQC" (chia sẻ TKQC cho Business đối tác) nằm ngay dưới card khi bật.
+          if (id === 'grant-ad-access' && on) {
+            const preselectedAds = [...selectedPersonalIds];
+            const prefillAdIds = preselectedAds.join('\n');
+            html += `<div class="feature-inline-form">
+              ${preselectedAds.length ? `<div class="add-user-hint">Đã điền sẵn ${preselectedAds.length} TKQC bạn đang chọn ở bảng TK Cá nhân — có thể sửa lại.</div>` : ''}
+              <label class="form-label">ID tài khoản quảng cáo (mỗi ID 1 dòng, có/không "act_" đều được)</label>
+              <textarea id="shareAdAccountIds" class="form-textarea" placeholder="Điền ID TKQC, mỗi ID 1 dòng...">${esc(prefillAdIds)}</textarea>
+              <label class="form-label">ID Business đối tác nhận chia sẻ (mỗi ID 1 dòng)</label>
+              <textarea id="sharePartnerBmIds" class="form-textarea" placeholder="Điền ID BM đối tác, mỗi ID 1 dòng..."></textarea>
+              <label class="form-label">Quyền cấp cho đối tác</label>
+              <select id="sharePermission" class="form-select">
+                <option value="full">Quản lý toàn quyền (Manage + Advertise + Analyze)</option>
+                <option value="analyze">Chỉ xem báo cáo (Analyze)</option>
+              </select>
+              <button id="shareSubmit" class="load-now" type="button" style="margin-top:12px">Chia sẻ</button>
+              <div id="shareResult" class="add-user-result"></div>
+            </div>`;
+          }
+
           // Form "Lời mời chờ duyệt" nằm ngay dưới card khi bật — cần nhập 1 ID BM rồi bấm Tải.
           if (id === 'invites' && on) {
             const prefillBmId = selectedIds.size ? [...selectedIds][0] : '';
@@ -1124,6 +1181,9 @@ const personalCurrencyDivisor = account => {
         loadPendingInvitesForBm(bmId);
       };
     }
+
+    const shareSubmitBtn = document.getElementById('shareSubmit');
+    if (shareSubmitBtn) shareSubmitBtn.onclick = submitSharePartner;
   };
 
   renderFeatureList();
