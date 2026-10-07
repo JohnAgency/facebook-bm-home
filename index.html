@@ -164,10 +164,14 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .invite-status-declined{background:#fdeaea;color:#df3d3d}
 .invite-status-canceled{background:#eef1f0;color:#87949a}
 .invite-date{font-size:10px;color:#9bb8ae}
-.invite-meta{flex-wrap:wrap;gap:6px}
-.invite-approve-btn{margin-left:auto;border:0;background:#11b886;color:#fff;font-size:10px;font-weight:700;border-radius:12px;padding:4px 10px;cursor:pointer}
+.invite-meta{display:flex;align-items:center;flex-wrap:nowrap;gap:6px}
+.invite-date{margin-right:auto;color:#899397;font-size:10px;white-space:nowrap}
+.invite-approve-btn,.invite-reject-btn{flex:0 0 auto;font-size:10px;font-weight:700;border-radius:12px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.invite-approve-btn{border:0;background:#11b886;color:#fff}
 .invite-approve-btn:hover{filter:brightness(.97)}
-.invite-approve-btn:disabled{opacity:.6;cursor:wait}
+.invite-reject-btn{border:1px solid #d9534f;background:#fff;color:#d9534f}
+.invite-reject-btn:hover{background:#fff4f3}
+.invite-approve-btn:disabled,.invite-reject-btn:disabled{opacity:.6;cursor:wait}
 .invite-approve-error{margin-top:6px;color:#df3d3d;font-size:10px}
 </style>
 </head>
