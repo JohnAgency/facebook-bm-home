@@ -154,6 +154,7 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-inline-btn{border:0;background:#11b886;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:0 14px;height:34px;cursor:pointer;white-space:nowrap}
 .form-inline-btn:hover{filter:brightness(.97)}
 .form-inline-btn:disabled{opacity:.6;cursor:wait}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .debug-raw{max-height:220px;overflow:auto;background:#f7fcfa;border:1px solid #e0efea;border-radius:6px;padding:8px;font-size:10px;white-space:pre-wrap;margin-top:6px}
 .invite-row{border:1px solid #edf2f0;border-radius:7px;padding:8px 10px;margin-bottom:6px;background:#fbfefd}
 .invite-summary{font-size:11px;color:#334155;line-height:1.4}
@@ -403,6 +404,60 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       }
     };
     // ===== Hết form "Cấp quyền TKQC" =====
+
+    // ===== Form "Change mã TIN" — đổi thông tin thuế của TKQC (billing account info) =====
+    const submitTaxUpdate = async () => {
+      const readLines = id => document.getElementById(id).value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const adAccountIds = readLines('taxAdAccountIds').map(id => id.replace(/^act_/, ''));
+      const taxIds = readLines('taxIds');
+      const businessName = document.getElementById('taxBusinessName').value.trim();
+      const countryCode = document.getElementById('taxCountryCode').value.trim().toUpperCase();
+      const address = {
+        street1: document.getElementById('taxStreet').value.trim(),
+        street2: '',
+        city: document.getElementById('taxCity').value.trim(),
+        state: document.getElementById('taxState').value.trim(),
+        zip: document.getElementById('taxZip').value.trim()
+      };
+      const resultBox = document.getElementById('taxResult');
+      const submitBtn = document.getElementById('taxSubmit');
+
+      if (!adAccountIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID TKQC.</div>'; return; }
+      if (!taxIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập mã TIN.</div>'; return; }
+      if (taxIds.length !== 1 && taxIds.length !== adAccountIds.length) {
+        resultBox.innerHTML = `<div class="error">Số dòng mã TIN (${taxIds.length}) phải là 1 (áp dụng cho tất cả) hoặc bằng số TKQC (${adAccountIds.length}).</div>`;
+        return;
+      }
+      if (!businessName) { resultBox.innerHTML = '<div class="error">Vui lòng nhập tên doanh nghiệp.</div>'; return; }
+      if (!/^[A-Z]{2}$/.test(countryCode)) { resultBox.innerHTML = '<div class="error">Mã quốc gia phải gồm 2 chữ cái (VD: VN, PH, US).</div>'; return; }
+
+      // API ghi đè toàn bộ thông tin thuế nên hỏi lại trước khi gửi.
+      if (!confirm(`Cập nhật thông tin thuế cho ${adAccountIds.length} TKQC?\nCác ô địa chỉ để trống sẽ xoá địa chỉ cũ trên Facebook.`)) return;
+
+      const items = adAccountIds.map((adAccountId, index) => ({
+        adAccountId,
+        taxId: taxIds.length === 1 ? taxIds[0] : taxIds[index]
+      }));
+
+      submitBtn.disabled = true;
+      resultBox.innerHTML = `<div class="loading">Đang cập nhật ${items.length} TKQC...</div>`;
+
+      try {
+        const response = await send('UPDATE_ACCOUNT_TAX_INFO', { items, businessName, countryCode, address });
+        if (!response.success) throw new Error(response.error || 'Cập nhật mã TIN thất bại.');
+        const results = Array.isArray(response.data?.results) ? response.data.results : [];
+        resultBox.innerHTML = results.length
+          ? `<table class="mini"><thead><tr><th>TKQC</th><th>Mã TIN</th><th>Kết quả</th></tr></thead><tbody>${
+              results.map(r => `<tr><td>${esc(r.adAccountId)}</td><td>${esc(r.taxId)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã cập nhật' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+            }</tbody></table>`
+          : '<div class="empty">Không nhận được kết quả nào.</div>';
+      } catch (error) {
+        resultBox.innerHTML = `<div class="error">${esc(error.message || 'Cập nhật mã TIN thất bại.')}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+    // ===== Hết form "Change mã TIN" =====
 
     // ===== "Lời mời chờ duyệt" — gọi LOAD_PENDING_INVITES theo 1 ID BM =====
     // Cấu trúc thật: data.business.unified_business_requests_mbs.edges[].node
@@ -1108,7 +1163,8 @@ const personalCurrencyDivisor = account => {
   { id: 'invites', icon: '✉️', name: 'Lời mời chờ duyệt', locked: false, info: 'Bật để xem lời mời/yêu cầu đang chờ của 1 BM.' },
   { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
   { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
-  { id: 'grant-ad-access', icon: '🔑', name: 'Share đối tác', locked: false, info: 'Bật để chia sẻ 1 hoặc nhiều TKQC cho Business đối tác (cấp quyền quản lý/xem báo cáo).' }
+  { id: 'grant-ad-access', icon: '🔑', name: 'Share đối tác', locked: false, info: 'Bật để chia sẻ 1 hoặc nhiều TKQC cho Business đối tác (cấp quyền quản lý/xem báo cáo).' },
+  { id: 'change-tax-id', icon: '🧾', name: 'Change mã TIN', locked: false, info: 'Bật để đổi mã số thuế (TIN) + thông tin doanh nghiệp cho 1 hoặc nhiều TKQC.' }
 ];
   const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
   const featureOrderKey = 'bm-control-feature-order-v1';
@@ -1208,6 +1264,32 @@ const personalCurrencyDivisor = account => {
             </div>`;
           }
 
+          // Form "Change mã TIN" nằm ngay dưới card khi bật.
+          if (id === 'change-tax-id' && on) {
+            const preselectedTaxAds = [...selectedPersonalIds];
+            html += `<div class="feature-inline-form">
+              ${preselectedTaxAds.length ? `<div class="add-user-hint">Đã điền sẵn ${preselectedTaxAds.length} TKQC bạn đang chọn ở bảng TK Cá nhân — có thể sửa lại.</div>` : ''}
+              <div class="add-user-hint" style="background:#fff7e8;color:#b9790f">Lưu ý: thao tác này ghi đè toàn bộ thông tin thuế. Ô địa chỉ để trống sẽ xoá địa chỉ cũ.</div>
+              <label class="form-label">ID tài khoản quảng cáo (mỗi ID 1 dòng)</label>
+              <textarea id="taxAdAccountIds" class="form-textarea" placeholder="Điền ID TKQC, mỗi ID 1 dòng...">${esc(preselectedTaxAds.join('\n'))}</textarea>
+              <label class="form-label">Mã TIN mới (1 dòng = áp dụng cho tất cả, hoặc mỗi TKQC 1 dòng theo đúng thứ tự)</label>
+              <textarea id="taxIds" class="form-textarea" placeholder="VD: 62713169400000"></textarea>
+              <label class="form-label">Tên doanh nghiệp</label>
+              <input type="text" id="taxBusinessName" class="form-input" placeholder="VD: AFC Technology Corp.">
+              <label class="form-label">Mã quốc gia (2 chữ cái)</label>
+              <input type="text" id="taxCountryCode" class="form-input" maxlength="2" placeholder="VD: VN, PH, US">
+              <label class="form-label">Địa chỉ (không bắt buộc)</label>
+              <input type="text" id="taxStreet" class="form-input" placeholder="Số nhà, đường">
+              <div class="form-grid-2" style="margin-top:6px">
+                <input type="text" id="taxCity" class="form-input" placeholder="Thành phố">
+                <input type="text" id="taxState" class="form-input" placeholder="Tỉnh / Bang">
+              </div>
+              <input type="text" id="taxZip" class="form-input" style="margin-top:6px" placeholder="Mã bưu chính">
+              <button id="taxSubmit" class="load-now" type="button" style="margin-top:12px">Cập nhật mã TIN</button>
+              <div id="taxResult" class="add-user-result"></div>
+            </div>`;
+          }
+
           // Form "Lời mời chờ duyệt" nằm ngay dưới card khi bật — cần nhập 1 ID BM rồi bấm Tải.
           if (id === 'invites' && on) {
             const prefillBmId = selectedIds.size ? [...selectedIds][0] : '';
@@ -1241,6 +1323,9 @@ const personalCurrencyDivisor = account => {
 
     const shareSubmitBtn = document.getElementById('shareSubmit');
     if (shareSubmitBtn) shareSubmitBtn.onclick = submitSharePartner;
+
+    const taxSubmitBtn = document.getElementById('taxSubmit');
+    if (taxSubmitBtn) taxSubmitBtn.onclick = submitTaxUpdate;
   };
 
   renderFeatureList();
