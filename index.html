@@ -155,6 +155,11 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-inline-btn:hover{filter:brightness(.97)}
 .form-inline-btn:disabled{opacity:.6;cursor:wait}
 .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.asset-group-row{display:flex;align-items:center;gap:8px;border:1px solid #edf2f0;border-radius:7px;padding:7px 9px;margin-top:6px;background:#fbfefd;cursor:pointer}
+.asset-group-row:hover{border-color:#8edbc4;background:#f4fffb}
+.asset-group-row input{accent-color:#11b886;flex:0 0 auto}
+.asset-group-name{flex:1;min-width:0;font-size:12px;font-weight:600;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asset-group-id{font-family:monospace;font-size:10px;color:#9bb8ae;flex:0 0 auto}
 .debug-raw{max-height:220px;overflow:auto;background:#f7fcfa;border:1px solid #e0efea;border-radius:6px;padding:8px;font-size:10px;white-space:pre-wrap;margin-top:6px}
 .invite-row{border:1px solid #edf2f0;border-radius:7px;padding:8px 10px;margin-bottom:6px;background:#fbfefd}
 .invite-summary{font-size:11px;color:#334155;line-height:1.4}
@@ -458,6 +463,79 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
       }
     };
     // ===== Hết form "Change mã TIN" =====
+
+    // ===== "Nhóm tài sản" — tải Asset Groups của 1 BM rồi thêm TKQC vào nhóm đã chọn =====
+    const assignAdAccountsToAssetGroup = async () => {
+      const picked = document.querySelector('input[name="assetGroupPick"]:checked');
+      const adAccountIds = document.getElementById('assetGroupAdIds').value
+        .split(/\r?\n/).map(s => s.trim().replace(/^act_/, '')).filter(Boolean);
+      const resultBox = document.getElementById('assetGroupAssignResult');
+      const submitBtn = document.getElementById('assetGroupAssignBtn');
+
+      if (!picked) { resultBox.innerHTML = '<div class="error">Vui lòng chọn 1 Nhóm tài sản.</div>'; return; }
+      if (!adAccountIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID TKQC.</div>'; return; }
+
+      submitBtn.disabled = true;
+      resultBox.innerHTML = `<div class="loading">Đang thêm ${adAccountIds.length} TKQC vào nhóm...</div>`;
+
+      try {
+        const response = await send('ASSIGN_ADACCOUNTS_TO_ASSET_GROUP', { groupId: picked.value, adAccountIds });
+        if (!response.success) throw new Error(response.error || 'Thêm TKQC vào nhóm thất bại.');
+        const results = Array.isArray(response.data?.results) ? response.data.results : [];
+        resultBox.innerHTML = results.length
+          ? `<table class="mini"><thead><tr><th>TKQC</th><th>Kết quả</th></tr></thead><tbody>${
+              results.map(r => `<tr><td>${esc(r.adAccountId)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã thêm vào nhóm' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+            }</tbody></table>`
+          : '<div class="empty">Không nhận được kết quả nào.</div>';
+      } catch (error) {
+        resultBox.innerHTML = `<div class="error">${esc(error.message || 'Thêm TKQC vào nhóm thất bại.')}</div>`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    };
+
+    const loadAssetGroupsForBm = async bmId => {
+      const resultBox = document.getElementById('assetGroupsResult');
+      const loadBtn = document.getElementById('assetGroupsLoadBtn');
+      if (!resultBox || !loadBtn) return;
+      if (!bmId) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ID BM.</div>'; return; }
+
+      loadBtn.disabled = true;
+      resultBox.innerHTML = '<div class="loading">Đang tải Nhóm tài sản...</div>';
+
+      try {
+        const response = await send('LOAD_ASSET_GROUPS', { businessId: bmId });
+        if (!response.success) throw new Error(response.error || 'Không tải được Nhóm tài sản.');
+        const groups = Array.isArray(response.data?.groups) ? response.data.groups : [];
+
+        if (!groups.length) {
+          resultBox.innerHTML = '<div class="empty">BM này chưa có Nhóm tài sản nào.</div>';
+          return;
+        }
+
+        // Điền sẵn các TKQC đang tick ở bảng TK Cá nhân. Không chọn sẵn nhóm nào để tránh thêm nhầm.
+        const preselected = [...selectedPersonalIds];
+        resultBox.innerHTML = `
+          <div class="form-label">Chọn Nhóm tài sản (${groups.length})</div>
+          ${groups.map(g => `<label class="asset-group-row">
+              <input type="radio" name="assetGroupPick" value="${esc(g.id)}">
+              <span class="asset-group-name" title="${esc(g.name)}">${esc(g.name || '(không tên)')}</span>
+              <span class="asset-group-id">${esc(g.id)}</span>
+            </label>`).join('')}
+          <label class="form-label">ID TKQC cần thêm vào nhóm (mỗi ID 1 dòng)</label>
+          ${preselected.length ? `<div class="add-user-hint">Đã điền sẵn ${preselected.length} TKQC bạn đang chọn ở bảng TK Cá nhân — có thể sửa lại.</div>` : ''}
+          <textarea id="assetGroupAdIds" class="form-textarea" placeholder="Điền ID TKQC, mỗi ID 1 dòng...">${esc(preselected.join('\n'))}</textarea>
+          <button id="assetGroupAssignBtn" class="load-now" type="button" style="margin-top:10px">Thêm vào nhóm</button>
+          <div id="assetGroupAssignResult" class="add-user-result"></div>`;
+
+        document.getElementById('assetGroupAssignBtn').onclick = assignAdAccountsToAssetGroup;
+      } catch (error) {
+        resultBox.innerHTML = `<div class="error">${esc(error.message || 'Không tải được Nhóm tài sản.')}</div>`;
+      } finally {
+        loadBtn.disabled = false;
+      }
+    };
+    // ===== Hết phần "Nhóm tài sản" =====
 
     // ===== "Lời mời chờ duyệt" — gọi LOAD_PENDING_INVITES theo 1 ID BM =====
     // Cấu trúc thật: data.business.unified_business_requests_mbs.edges[].node
@@ -1164,7 +1242,8 @@ const personalCurrencyDivisor = account => {
   { id: 'approve-permissions', icon: '🛡️', name: 'Duyệt yêu cầu quyền', locked: true, info: 'Duyệt các yêu cầu cấp quyền TKQC/Page đang chờ BM phê duyệt.' },
   { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
   { id: 'grant-ad-access', icon: '🔑', name: 'Share đối tác', locked: false, info: 'Bật để chia sẻ 1 hoặc nhiều TKQC cho Business đối tác (cấp quyền quản lý/xem báo cáo).' },
-  { id: 'change-tax-id', icon: '🧾', name: 'Change mã TIN', locked: false, info: 'Bật để đổi mã số thuế (TIN) + thông tin doanh nghiệp cho 1 hoặc nhiều TKQC.' }
+  { id: 'change-tax-id', icon: '🧾', name: 'Change mã TIN', locked: false, info: 'Bật để đổi mã số thuế (TIN) + thông tin doanh nghiệp cho 1 hoặc nhiều TKQC.' },
+  { id: 'asset-groups', icon: '🗂️', name: 'Nhóm tài sản', locked: false, info: 'Bật để tải danh sách Nhóm tài sản của 1 BM và thêm TKQC vào nhóm đã chọn.' }
 ];
   const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
   const featureOrderKey = 'bm-control-feature-order-v1';
@@ -1290,6 +1369,19 @@ const personalCurrencyDivisor = account => {
             </div>`;
           }
 
+          // Form "Nhóm tài sản" nằm ngay dưới card khi bật — nhập 1 ID BM, bấm Tải, chọn nhóm rồi thêm TKQC.
+          if (id === 'asset-groups' && on) {
+            const prefillAssetBmId = selectedIds.size ? [...selectedIds][0] : '';
+            html += `<div class="feature-inline-form">
+              <label class="form-label">ID Business Manager cần xem Nhóm tài sản</label>
+              <div class="form-inline-row">
+                <input type="text" id="assetGroupsBmId" class="form-input" placeholder="Nhập 1 ID BM..." value="${esc(prefillAssetBmId)}">
+                <button id="assetGroupsLoadBtn" class="form-inline-btn" type="button">Tải</button>
+              </div>
+              <div id="assetGroupsResult" class="add-user-result"></div>
+            </div>`;
+          }
+
           // Form "Lời mời chờ duyệt" nằm ngay dưới card khi bật — cần nhập 1 ID BM rồi bấm Tải.
           if (id === 'invites' && on) {
             const prefillBmId = selectedIds.size ? [...selectedIds][0] : '';
@@ -1326,6 +1418,13 @@ const personalCurrencyDivisor = account => {
 
     const taxSubmitBtn = document.getElementById('taxSubmit');
     if (taxSubmitBtn) taxSubmitBtn.onclick = submitTaxUpdate;
+
+    const assetGroupsLoadBtn = document.getElementById('assetGroupsLoadBtn');
+    if (assetGroupsLoadBtn) {
+      assetGroupsLoadBtn.onclick = () => {
+        loadAssetGroupsForBm(document.getElementById('assetGroupsBmId').value.trim());
+      };
+    }
   };
 
   renderFeatureList();
