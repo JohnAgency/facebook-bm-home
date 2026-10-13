@@ -155,6 +155,9 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
 .form-inline-btn:hover{filter:brightness(.97)}
 .form-inline-btn:disabled{opacity:.6;cursor:wait}
 .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.personal-sort-btn{border:0;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer;padding:3px 5px;white-space:nowrap}
+.personal-sort-btn:hover{color:#059669}.personal-sort-btn span{color:#93a19f;margin-left:3px}.personal-sort-btn.active{color:#059669}.personal-sort-btn.active span{color:#059669}
+.personal-table.is-dragging .personal-sort-btn{pointer-events:none}
 .asset-group-row{display:flex;align-items:center;gap:8px;border:1px solid #edf2f0;border-radius:7px;padding:7px 9px;margin-top:6px;background:#fbfefd;cursor:pointer}
 .asset-group-row:hover{border-color:#8edbc4;background:#f4fffb}
 .asset-group-row input{accent-color:#11b886;flex:0 0 auto}
@@ -946,16 +949,12 @@ const personalCurrencyDivisor = account => {
     return Number.isFinite(days) ? String(Math.max(0, days)) : '—';
   };
   const renderPersonal = () => {
-    const query = search.value.trim().toLowerCase();
-    const rows = personalAccounts.filter(a =>
-      String(a.name || '').toLowerCase().includes(query) ||
-      String(a.account_id || '').includes(query)
-    );
+    const rows = filteredPersonalAccounts();
     const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     personalPage = Math.min(personalPage, totalPages);
     const pageRows = rows.slice((personalPage - 1) * PAGE_SIZE, personalPage * PAGE_SIZE);
     count.textContent = rows.length;
-    countLabel.textContent = 'Tài khoản cá nhân';
+    countLabel.textContent = 'Tài khoản cá nhân' + personalFilterSummary();
     updatePagination(totalPages);
     personalBody.innerHTML = pageRows.map((account) => {
       const accountId = String(account.account_id || account.id || '');
@@ -1003,8 +1002,7 @@ const personalCurrencyDivisor = account => {
     syncPersonalSelectAll(visiblePersonalRows());
   });
   const visiblePersonalRows = () => {
-    const query = search.value.trim().toLowerCase();
-    const rows = personalAccounts.filter(account => String(account.name || '').toLowerCase().includes(query) || String(account.account_id || '').includes(query));
+    const rows = filteredPersonalAccounts();
     return rows.slice((personalPage - 1) * PAGE_SIZE, personalPage * PAGE_SIZE);
   };
   document.addEventListener('change', event => {
@@ -1012,6 +1010,249 @@ const personalCurrencyDivisor = account => {
     visiblePersonalRows().forEach(account => { const id = String(account.account_id || account.id || ''); if (event.target.checked) selectedPersonalIds.add(id); else selectedPersonalIds.delete(id); });
     renderPersonal();
   });
+  // ===== TK Cá nhân: bấm tiêu đề cột để lọc / sắp xếp (giống tab BM) + dữ liệu dùng cho "Xuất file" =====
+  const personalAccountId = a => String(a?.account_id || a?.id || '');
+  const toTime = value => { if (!value) return null; const t = new Date(value).getTime(); return Number.isFinite(t) ? t : null; };
+  const limitNumber = account => {
+    const raw = account?.adtrust_dsl;
+    if (raw === undefined || raw === null || String(raw).trim() === '' || String(raw).trim() === '_') return null;
+    const n = Number(String(raw).replace(/[^0-9+\-.]/g, ''));
+    if (!Number.isFinite(n)) return null;
+    return n === -1 ? Infinity : n; // -1 = NOLIMIT, xếp lớn nhất
+  };
+  // idx = vị trí cột trong bảng. Cột có `filter` là cột phân loại: bấm để lọc lần lượt theo từng giá trị.
+  // Các cột còn lại: bấm để sắp xếp tăng → giảm → bỏ sắp xếp.
+  const PERSONAL_COLUMNS = [
+    { idx: 1, label: 'Trạng thái tài khoản', text: a => a.__detailError || String(personalStatus(a)), sort: a => String(personalStatus(a)), filter: a => String(personalStatus(a)) },
+    { idx: 2, label: 'Tài khoản', exportLabel: 'Tên tài khoản', text: a => String(personalValue(a, 'name')), sort: a => String(personalValue(a, 'name')).toLowerCase() },
+    { idx: 3, label: 'Số dư', text: a => personalFormatMoney(a, a.balance), sort: a => personalMoneyNumber(a, a.balance) },
+    { idx: 4, label: 'Ngưỡng', text: a => personalFormatMoney(a, personalThreshold(a)), sort: a => personalMoneyNumber(a, personalThreshold(a)) },
+    { idx: 5, label: 'Limit', text: a => String(personalLimit(a)), sort: limitNumber },
+    { idx: 6, label: 'Tổng tiêu', text: a => personalFormatMoney(a, personalSpend(a)), sort: a => personalMoneyNumber(a, personalSpend(a)) },
+    { idx: 7, label: 'Tiền tệ', text: a => String(personalValue(a, 'currency')), sort: a => String(personalValue(a, 'currency')), filter: a => String(personalValue(a, 'currency')) },
+    { idx: 8, label: 'Quyền sở hữu', text: a => String(personalOwnership(a)), sort: a => String(personalOwnership(a)), filter: a => String(personalOwnership(a)) },
+    { idx: 9, label: 'Giới hạn chi tiêu', text: a => personalFormatMoney(a, a.spend_cap), sort: a => personalMoneyNumber(a, a.spend_cap) },
+    { idx: 10, label: 'PT thanh toán', text: a => String(personalPayment(a)), sort: a => String(personalPayment(a)).toLowerCase() },
+    { idx: 11, label: 'Ngày lập hóa đơn', text: a => personalBillDate(a), sort: a => toTime(a?.next_bill_date) },
+    { idx: 12, label: 'Số ngày đến kỳ TT', text: a => String(personalDaysToBill(a)), sort: a => { const n = Number(personalDaysToBill(a)); return Number.isFinite(n) ? n : null; } },
+    { idx: 13, label: 'Lý do bị khóa', text: a => String(personalDisableReason(a)), sort: a => String(personalDisableReason(a)) },
+    { idx: 14, label: 'Ngày tạo tài khoản', text: a => date(a.created_time), sort: a => toTime(a?.created_time) },
+    { idx: 15, label: 'Loại TK', text: a => String(personalType(a)), sort: a => String(personalType(a)), filter: a => String(personalType(a)) },
+    { idx: 16, label: 'Múi giờ TK', text: a => String(personalValue(a, 'timezone_name')), sort: a => String(personalValue(a, 'timezone_name')) },
+    { idx: 17, label: 'Được tạo từ BM', text: a => String(personalValue(a, 'owner_business')), sort: a => String(personalValue(a, 'owner_business')) },
+    { idx: 18, label: 'Quốc gia TKQC', text: a => String(personalValue(a, 'business_country_code')), sort: a => String(personalValue(a, 'business_country_code')) }
+  ];
+
+  let personalSortIdx = null;
+  let personalSortDir = 1;
+  const personalFilters = {}; // idx cột -> giá trị đang lọc ('' = không lọc)
+
+  const isMissingSortValue = v => v === null || v === undefined || v === '' || v === '—' || v === '_' || (typeof v === 'number' && Number.isNaN(v));
+
+  const sortPersonalRows = rows => {
+    const col = PERSONAL_COLUMNS.find(c => c.idx === personalSortIdx);
+    if (!col) return rows;
+    const keyed = rows.map(row => ({ row, key: col.sort(row) }));
+    keyed.sort((x, y) => {
+      const xm = isMissingSortValue(x.key), ym = isMissingSortValue(y.key);
+      if (xm && ym) return 0;
+      if (xm) return 1;   // dòng chưa có dữ liệu luôn xếp cuối, dù tăng hay giảm
+      if (ym) return -1;
+      if (typeof x.key === 'string' || typeof y.key === 'string') {
+        return String(x.key).localeCompare(String(y.key), 'vi', { numeric: true }) * personalSortDir;
+      }
+      if (x.key === y.key) return 0;
+      return (x.key < y.key ? -1 : 1) * personalSortDir;
+    });
+    return keyed.map(item => item.row);
+  };
+
+  // Dòng của bảng TK Cá nhân sau tìm kiếm + bộ lọc cột + sắp xếp (chưa chia trang).
+  const filteredPersonalAccounts = () => {
+    const query = search.value.trim().toLowerCase();
+    let rows = personalAccounts.filter(a =>
+      String(a.name || '').toLowerCase().includes(query) ||
+      String(a.account_id || '').includes(query)
+    );
+    PERSONAL_COLUMNS.forEach(col => {
+      const wanted = personalFilters[col.idx];
+      if (wanted && col.filter) rows = rows.filter(a => col.filter(a) === wanted);
+    });
+    return sortPersonalRows(rows);
+  };
+
+  const personalFilterSummary = () => {
+    const parts = PERSONAL_COLUMNS.filter(c => c.filter && personalFilters[c.idx]).map(c => personalFilters[c.idx]);
+    return parts.length ? ' · lọc: ' + parts.join(', ') : '';
+  };
+
+  const updatePersonalHeaders = () => {
+    document.querySelectorAll('.personal-sort-btn').forEach(btn => {
+      const idx = Number(btn.dataset.psort);
+      const col = PERSONAL_COLUMNS.find(c => c.idx === idx);
+      if (!col) return;
+      let active = false;
+      let mark = col.filter ? '▾' : '↕';
+      if (col.filter) {
+        if (personalFilters[idx]) { active = true; mark = '●'; }
+        btn.title = personalFilters[idx]
+          ? `Đang lọc: ${personalFilters[idx]} — bấm để chuyển sang giá trị tiếp theo`
+          : 'Bấm để lọc theo từng giá trị';
+      } else {
+        if (personalSortIdx === idx) { active = true; mark = personalSortDir === 1 ? '↑' : '↓'; }
+        btn.title = 'Bấm để sắp xếp (tăng → giảm → bỏ)';
+      }
+      btn.classList.toggle('active', active);
+      const arrow = btn.querySelector('span');
+      if (arrow) arrow.textContent = mark;
+    });
+  };
+
+  const setupPersonalSortHeaders = () => {
+    const header = document.querySelector('.personal-table thead tr');
+    if (!header) return;
+    Array.from(header.cells).forEach((th, index) => {
+      if (index === 0) return; // cột checkbox
+      const col = PERSONAL_COLUMNS.find(c => c.idx === index);
+      if (!col) return;
+      th.innerHTML = `<button type="button" class="personal-sort-btn" data-psort="${index}">${esc(col.label)} <span>${col.filter ? '▾' : '↕'}</span></button>`;
+    });
+    header.addEventListener('click', event => {
+      const btn = event.target.closest('.personal-sort-btn');
+      if (!btn) return;
+      const idx = Number(btn.dataset.psort);
+      const col = PERSONAL_COLUMNS.find(c => c.idx === idx);
+      if (!col) return;
+      if (col.filter) {
+        const values = [...new Set(personalAccounts.map(a => col.filter(a)).filter(v => v && v !== '—'))]
+          .sort((x, y) => x.localeCompare(y, 'vi'));
+        const current = personalFilters[idx] || '';
+        const next = current === '' ? values[0] : values[values.indexOf(current) + 1];
+        personalFilters[idx] = next || ''; // qua giá trị cuối thì về "không lọc"
+      } else if (personalSortIdx === idx) {
+        if (personalSortDir === 1) personalSortDir = -1;
+        else { personalSortIdx = null; personalSortDir = 1; }
+      } else {
+        personalSortIdx = idx;
+        personalSortDir = 1;
+      }
+      personalPage = 1;
+      updatePersonalHeaders();
+      renderPersonal();
+    });
+    updatePersonalHeaders();
+  };
+
+  // ===== Xuất file (TK Cá nhân / TK BM → .csv, .txt, .json, Excel, chỉ ID) =====
+  const BM_EXPORT_COLUMNS = [
+    { label: 'Trạng thái', text: b => b.__checkError ? 'Lỗi' : status(b)[0] },
+    { label: 'Tên BM', text: b => b.name || '' },
+    { label: 'ID BM', text: b => String(b.id) },
+    { label: 'Loại BM', text: b => inferLimit(b) },
+    { label: 'Quyền sở hữu', text: b => b.businessRole || b.business_role || '_' },
+    { label: 'Limit', text: b => inferType(b) },
+    { label: 'Verified', text: b => verified(b)[0] },
+    { label: 'Created', text: b => date(b.created_time) },
+    { label: 'SL Admin', text: b => String(b.businessUsersAdminCount ?? 0) },
+    { label: 'SL Adaccount', text: b => String(arrCount(b.owned_ad_accounts) + arrCount(b.client_ad_accounts)) },
+    { label: 'ID gốc', text: b => String(rootId(b)) }
+  ];
+  const PERSONAL_EXPORT_COLUMNS = [
+    { label: 'ID TKQC', text: a => personalAccountId(a) },
+    ...PERSONAL_COLUMNS.map(c => ({ label: c.exportLabel || c.label, text: c.text }))
+  ];
+
+  const exportTimestamp = () => {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  };
+
+  const downloadTextFile = (filename, content, mime) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const csvCell = (value, keepLongIds) => {
+    let s = String(value ?? '');
+    // Excel làm tròn số dài từ 16 chữ số trở lên (ID TKQC/BM) và đổi sang dạng khoa học → bọc dạng ="..." để giữ nguyên.
+    if (keepLongIds && /^\d{12,}$/.test(s)) return `"=""${s}"""`;
+    // Chặn công thức khi mở bằng Excel (ô bắt đầu bằng = @ hoặc + - không phải số/tiền).
+    if (/^[=@]/.test(s) || (/^[+\-]/.test(s) && !/^[+\-]?\$?[\d.,]+(\s?[A-Za-zĐ]{0,5})?$/.test(s))) s = "'" + s;
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+
+  const getExportDataset = (source, scope) => {
+    if (source === 'bm') {
+      const rows = scope === 'selected'
+        ? businesses.filter(b => selectedIds.has(String(b.id)))
+        : visibleBusinesses();
+      return { title: 'TK BM', fileName: 'tk-bm', columns: BM_EXPORT_COLUMNS, rows, idOf: b => String(b.id) };
+    }
+    const rows = scope === 'selected'
+      ? sortPersonalRows(personalAccounts.filter(a => selectedPersonalIds.has(personalAccountId(a))))
+      : filteredPersonalAccounts();
+    return { title: 'TK Cá nhân', fileName: 'tk-ca-nhan', columns: PERSONAL_EXPORT_COLUMNS, rows, idOf: personalAccountId };
+  };
+
+  const submitExport = () => {
+    const source = document.getElementById('exportSource').value;
+    const scope = document.getElementById('exportScope').value;
+    const format = document.getElementById('exportFormat').value;
+    const keepLongIds = document.getElementById('exportKeepIds').checked;
+    const resultBox = document.getElementById('exportResult');
+
+    const dataset = getExportDataset(source, scope);
+    if (!dataset.rows.length) {
+      resultBox.innerHTML = `<div class="error">${scope === 'selected'
+        ? 'Chưa tick dòng nào ở bảng ' + dataset.title + '.'
+        : 'Bảng ' + dataset.title + ' chưa có dòng nào để xuất.'}</div>`;
+      return;
+    }
+
+    const base = `${dataset.fileName}_${exportTimestamp()}`;
+    const headers = dataset.columns.map(c => c.label);
+    const matrix = dataset.rows.map(row => dataset.columns.map(c => String(c.text(row) ?? '')));
+    let filename, content, mime;
+
+    if (format === 'ids') {
+      filename = `${base}_ids.txt`;
+      content = dataset.rows.map(dataset.idOf).join('\r\n');
+      mime = 'text/plain;charset=utf-8';
+    } else if (format === 'txt') {
+      filename = `${base}.txt`;
+      content = [headers, ...matrix].map(r => r.map(v => v.replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\r\n');
+      mime = 'text/plain;charset=utf-8';
+    } else if (format === 'json') {
+      filename = `${base}.json`;
+      content = JSON.stringify(matrix.map(r => Object.fromEntries(headers.map((h, i) => [h, r[i]]))), null, 2);
+      mime = 'application/json;charset=utf-8';
+    } else if (format === 'xls') {
+      filename = `${base}.xls`;
+      const cell = (tag, v) => `<${tag} style="mso-number-format:'\\@'">${esc(v)}</${tag}>`;
+      content = '\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr>'
+        + headers.map(h => cell('th', h)).join('')
+        + '</tr></thead><tbody>'
+        + matrix.map(r => '<tr>' + r.map(v => cell('td', v)).join('') + '</tr>').join('')
+        + '</tbody></table></body></html>';
+      mime = 'application/vnd.ms-excel;charset=utf-8';
+    } else {
+      filename = `${base}.csv`;
+      content = '\uFEFF' + [headers, ...matrix].map(r => r.map(v => csvCell(v, keepLongIds)).join(',')).join('\r\n');
+      mime = 'text/csv;charset=utf-8';
+    }
+
+    downloadTextFile(filename, content, mime);
+    resultBox.innerHTML = `<div class="loading">Đã xuất ${dataset.rows.length} dòng · ${esc(filename)}</div>`;
+  };
+
   async function checkPersonalAccountsInBatches(loadToken) {
     const batchSize = 25;
     const concurrency = 2;
@@ -1196,6 +1437,7 @@ const personalCurrencyDivisor = account => {
   document.getElementById('bmTab').onclick = () => switchTab('bm');
   document.getElementById('pageTab').onclick = () => alert('Chức năng Page sẽ được bổ sung sau.');
   setupColumnDrag();
+  setupPersonalSortHeaders();
   setupPersonalColumnControls();
   document.querySelectorAll('.sort-btn').forEach(btn=>btn.onclick=()=>{const key=btn.dataset.sort;if(key==='status'){statusFilter=statusFilter==='Live'?'Restricted':statusFilter==='Restricted'?'':'Live';sortKey='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));if(statusFilter)btn.classList.add('active');}else{if(sortKey===key)sortDirection*=-1;else{sortKey=key;sortDirection=1;}statusFilter='';document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}render();});
   async function load(){showNotice('loading','Đang kết nối extension và tải danh sách BM...');body.innerHTML='';try{const p=await send('PING');if(!p.success)throw new Error(p.error);showNotice('loading','Đang chuẩn bị phiên Facebook (lần đầu extension sẽ tự mở 1 tab nền, có thể mất vài giây)...');const s=await send('CHECK_SESSION');if(!s.success)throw new Error(s.error);const r=await send('LOAD_BM');if(!r.success)throw new Error(r.error);businesses=r.data?.businesses||[];notice.innerHTML=businesses.length?'':'<div class="empty">Chưa có dữ liệu BM.</div>';render();if(businesses.length)await autoCheckAll();}catch(e){showNotice('error',e.message||'Không thể tải BM.');}}
@@ -1243,7 +1485,8 @@ const personalCurrencyDivisor = account => {
   { id: 'add-bm-user', icon: '👤', name: 'Thêm người dùng vào BM', locked: false, info: 'Bật để hiện form mời email vào 1 hoặc nhiều Business Manager.' },
   { id: 'grant-ad-access', icon: '🔑', name: 'Share đối tác', locked: false, info: 'Bật để chia sẻ 1 hoặc nhiều TKQC cho Business đối tác (cấp quyền quản lý/xem báo cáo).' },
   { id: 'change-tax-id', icon: '🧾', name: 'Change mã TIN', locked: false, info: 'Bật để đổi mã số thuế (TIN) + thông tin doanh nghiệp cho 1 hoặc nhiều TKQC.' },
-  { id: 'asset-groups', icon: '🗂️', name: 'Nhóm tài sản', locked: false, info: 'Bật để tải danh sách Nhóm tài sản của 1 BM và thêm TKQC vào nhóm đã chọn.' }
+  { id: 'asset-groups', icon: '🗂️', name: 'Nhóm tài sản', locked: false, info: 'Bật để tải danh sách Nhóm tài sản của 1 BM và thêm TKQC vào nhóm đã chọn.' },
+  { id: 'export-file', icon: '📤', name: 'Xuất file', locked: false, info: 'Bật để xuất TK Cá nhân / TK BM ra .csv, .txt, .json, Excel hoặc chỉ danh sách ID.' }
 ];
   const featureById = new Map(FEATURE_DEFS.map(f => [f.id, f]));
   const featureOrderKey = 'bm-control-feature-order-v1';
@@ -1369,6 +1612,33 @@ const personalCurrencyDivisor = account => {
             </div>`;
           }
 
+          // Form "Xuất file" nằm ngay dưới card khi bật.
+          if (id === 'export-file' && on) {
+            html += `<div class="feature-inline-form">
+              <label class="form-label">Bảng cần xuất</label>
+              <select id="exportSource" class="form-select">
+                <option value="personal" ${activeTab === 'personal' ? 'selected' : ''}>TK Cá nhân</option>
+                <option value="bm" ${activeTab !== 'personal' ? 'selected' : ''}>TK BM</option>
+              </select>
+              <label class="form-label">Phạm vi</label>
+              <select id="exportScope" class="form-select">
+                <option value="filtered">Tất cả dòng đang hiển thị (theo tìm kiếm / bộ lọc / sắp xếp, mọi trang)</option>
+                <option value="selected">Chỉ các dòng đã tick chọn</option>
+              </select>
+              <label class="form-label">Định dạng</label>
+              <select id="exportFormat" class="form-select">
+                <option value="csv">CSV (.csv) — mở bằng Excel</option>
+                <option value="txt">TXT (.txt) — các cột cách nhau bằng Tab</option>
+                <option value="ids">TXT chỉ ID (.txt) — mỗi ID 1 dòng</option>
+                <option value="json">JSON (.json)</option>
+                <option value="xls">Excel (.xls) — có thể hiện cảnh báo định dạng khi mở</option>
+              </select>
+              <label class="load-remember"><input type="checkbox" id="exportKeepIds" checked> Giữ nguyên ID dài khi mở CSV bằng Excel</label>
+              <button id="exportSubmit" class="load-now" type="button" style="margin-top:12px">Xuất file</button>
+              <div id="exportResult" class="add-user-result"></div>
+            </div>`;
+          }
+
           // Form "Nhóm tài sản" nằm ngay dưới card khi bật — nhập 1 ID BM, bấm Tải, chọn nhóm rồi thêm TKQC.
           if (id === 'asset-groups' && on) {
             const prefillAssetBmId = selectedIds.size ? [...selectedIds][0] : '';
@@ -1418,6 +1688,9 @@ const personalCurrencyDivisor = account => {
 
     const taxSubmitBtn = document.getElementById('taxSubmit');
     if (taxSubmitBtn) taxSubmitBtn.onclick = submitTaxUpdate;
+
+    const exportSubmitBtn = document.getElementById('exportSubmit');
+    if (exportSubmitBtn) exportSubmitBtn.onclick = submitExport;
 
     const assetGroupsLoadBtn = document.getElementById('assetGroupsLoadBtn');
     if (assetGroupsLoadBtn) {
