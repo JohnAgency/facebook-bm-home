@@ -843,8 +843,8 @@ resultBox.querySelectorAll('.invite-reject-btn').forEach(btn => {
     return false;
   }
   async function autoCheckAll(){
-    const batchSize = 50;
-    const concurrency = 5;
+    const batchSize = 20;
+    const concurrency = 50;
     let completed = 0;
     for (let offset = 0; offset < businesses.length; offset += batchSize) {
       const batch = businesses.slice(offset, offset + batchSize);
