@@ -377,40 +377,126 @@ html,body{height:100%;overflow:hidden}.app{height:100vh;min-height:0;overflow:hi
     // ===== Hết form "Thêm người dùng vào BM" =====
 
     // ===== Form "Cấp quyền TKQC" (chia sẻ TKQC cho Business đối tác) =====
+    let shareStopRequested = false; // bấm "Dừng" khi đang chia sẻ theo batch
     const SHARE_PERMISSION_TASKS = {
       full: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
       analyze: ['ANALYZE']
     };
 
     const submitSharePartner = async () => {
-      const adAccountIds = document.getElementById('shareAdAccountIds').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const adAccountIds = document.getElementById('shareAdAccountIds').value.split(/\r?\n/).map(s => s.trim().replace(/^act_/, '')).filter(Boolean);
       const partnerIds = document.getElementById('sharePartnerBmIds').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
       const permissionKey = document.getElementById('sharePermission').value;
       const permittedTasks = SHARE_PERMISSION_TASKS[permissionKey] || SHARE_PERMISSION_TASKS.analyze;
+      const batchSize = Math.min(50, Math.max(1, parseInt(document.getElementById('shareBatchSize').value, 10) || 20));
+      const delayMs = Math.max(0, (parseFloat(document.getElementById('shareBatchDelay').value) || 0) * 1000);
       const resultBox = document.getElementById('shareResult');
-      const submitBtn = document.getElementById('shareSubmit');
 
       if (!adAccountIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID TKQC.</div>'; return; }
       if (!partnerIds.length) { resultBox.innerHTML = '<div class="error">Vui lòng nhập ít nhất 1 ID Business đối tác.</div>'; return; }
 
-      submitBtn.disabled = true;
-      resultBox.innerHTML = `<div class="loading">Đang chia sẻ ${adAccountIds.length * partnerIds.length} lượt...</div>`;
+      // Mỗi cặp (TKQC × BM đối tác) là 1 yêu cầu; gom thành các batch rồi gửi lần lượt.
+      const pairs = [];
+      adAccountIds.forEach(adAccountId => partnerIds.forEach(partnerId => pairs.push({ adAccountId, partnerId })));
+      const chunks = [];
+      for (let i = 0; i < pairs.length; i += batchSize) {
+        chunks.push(pairs.slice(i, i + batchSize).map((pair, k) => ({ ...pair, index: i + k })));
+      }
+
+      if (!confirm(`Chia sẻ ${adAccountIds.length} TKQC cho ${partnerIds.length} BM đối tác?\n${pairs.length} yêu cầu, gửi trong ${chunks.length} batch (tối đa ${batchSize} yêu cầu/batch).`)) return;
+
+      const SHARE_MAX_ATTEMPTS = 3;           // 1 lần gửi + tối đa 2 lần thử lại cho yêu cầu bị giới hạn tần suất
+      const SHARE_RETRY_BASE_MS = 20000;      // chờ 20s, rồi 40s ... giữa các lần thử lại
+      const SHARE_RATE_LIMIT_RE = /rate.?limit|request limit|too many calls|reduce the amount|temporarily blocked|\(#(?:4|17|32|613|800\d\d)\)/i;
+
+      const results = new Array(pairs.length).fill(null);
+      const stats = () => {
+        const done = results.filter(Boolean).length;
+        const ok = results.filter(r => r && r.success).length;
+        return { done, ok, fail: done - ok };
+      };
+      const setSubmitDisabled = disabled => { const btn = document.getElementById('shareSubmit'); if (btn) btn.disabled = disabled; };
+
+      // Luôn tìm lại phần tử theo id: form có thể được vẽ lại trong lúc đang chạy.
+      const paint = text => {
+        const box = document.getElementById('shareResult');
+        if (!box) return;
+        box.innerHTML = `<div class="loading">${esc(text)} <button type="button" id="shareStopBtn" class="invite-reject-btn" style="margin-left:6px">Dừng</button></div>`;
+        const stopBtn = document.getElementById('shareStopBtn');
+        if (stopBtn) stopBtn.onclick = () => { shareStopRequested = true; stopBtn.disabled = true; stopBtn.textContent = 'Đang dừng...'; };
+      };
+      const countdown = async (ms, label) => {
+        const end = Date.now() + ms;
+        while (!shareStopRequested && Date.now() < end) {
+          paint(`${label} · còn ${Math.ceil((end - Date.now()) / 1000)}s`);
+          await wait(Math.max(20, Math.min(1000, end - Date.now())));
+        }
+      };
+
+      shareStopRequested = false;
+      setSubmitDisabled(true);
 
       try {
-        const response = await send('SHARE_AD_ACCOUNTS_TO_PARTNER', { adAccountIds, partnerBusinessIds: partnerIds, permittedTasks });
-        if (!response.success) throw new Error(response.error || 'Chia sẻ thất bại.');
-        const results = Array.isArray(response.data?.results) ? response.data.results : [];
-        resultBox.innerHTML = results.length
-          ? `<table class="mini"><thead><tr><th>TKQC</th><th>BM đối tác</th><th>Kết quả</th></tr></thead><tbody>${
-              results.map(r => `<tr><td>${esc(r.adAccountId)}</td><td>${esc(r.partnerId)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã chia sẻ' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
-            }</tbody></table>`
-          : '<div class="empty">Không nhận được kết quả nào.</div>';
+        for (let c = 0; c < chunks.length && !shareStopRequested; c++) {
+          let pending = chunks[c];
+
+          for (let attempt = 1; attempt <= SHARE_MAX_ATTEMPTS && pending.length && !shareStopRequested; attempt++) {
+            const s = stats();
+            paint(`Batch ${c + 1}/${chunks.length}${attempt > 1 ? ` (thử lại lần ${attempt - 1})` : ''} · đã xử lý ${s.done}/${pairs.length} · thành công ${s.ok} · lỗi ${s.fail}`);
+
+            let batchResults;
+            try {
+              const response = await send('SHARE_AD_ACCOUNTS_BATCH', {
+                pairs: pending.map(({ adAccountId, partnerId }) => ({ adAccountId, partnerId })),
+                permittedTasks
+              });
+              if (!response.success) throw new Error(response.error || 'Batch thất bại.');
+              batchResults = response.data?.results;
+              if (!Array.isArray(batchResults) || batchResults.length !== pending.length) {
+                throw new Error('Extension trả về kết quả không khớp số yêu cầu đã gửi.');
+              }
+            } catch (error) {
+              const message = error.message || 'Batch thất bại.';
+              batchResults = pending.map(() => ({ success: false, error: message, retryable: SHARE_RATE_LIMIT_RE.test(message) }));
+            }
+
+            const retry = [];
+            batchResults.forEach((r, i) => {
+              const item = pending[i];
+              if (!r.success && r.retryable && attempt < SHARE_MAX_ATTEMPTS) retry.push(item);
+              else results[item.index] = { adAccountId: item.adAccountId, partnerId: item.partnerId, success: !!r.success, error: r.error || '' };
+            });
+            pending = retry;
+
+            if (pending.length) {
+              await countdown(SHARE_RETRY_BASE_MS * 2 ** (attempt - 1), `Facebook giới hạn tần suất, chờ rồi gửi lại ${pending.length} yêu cầu`);
+            }
+          }
+
+          if (c < chunks.length - 1 && !shareStopRequested && delayMs) {
+            await countdown(delayMs, 'Nghỉ giữa các batch');
+          }
+        }
+
+        const stopped = shareStopRequested;
+        const finalResults = results.map((r, i) => r || { adAccountId: pairs[i].adAccountId, partnerId: pairs[i].partnerId, success: false, error: 'Chưa gửi xong (đã dừng)' });
+        const okCount = finalResults.filter(r => r.success).length;
+        const ordered = [...finalResults.filter(r => !r.success), ...finalResults.filter(r => r.success)]; // lỗi lên đầu cho dễ thấy
+        const box = document.getElementById('shareResult');
+        if (box) {
+          box.innerHTML = `<div class="${okCount === finalResults.length ? 'loading' : 'error'}">${stopped ? 'Đã dừng. ' : ''}Thành công ${okCount}/${finalResults.length} yêu cầu.</div>`
+            + `<div style="max-height:280px;overflow:auto"><table class="mini"><thead><tr><th>TKQC</th><th>BM đối tác</th><th>Kết quả</th></tr></thead><tbody>${
+              ordered.map(r => `<tr><td>${esc(r.adAccountId)}</td><td>${esc(r.partnerId)}</td><td style="color:${r.success ? '#16894e' : '#df3d3d'}">${r.success ? 'Đã chia sẻ' : esc(r.error || 'Lỗi')}</td></tr>`).join('')
+            }</tbody></table></div>`;
+        }
       } catch (error) {
-        resultBox.innerHTML = `<div class="error">${esc(error.message || 'Chia sẻ thất bại.')}</div>`;
+        const box = document.getElementById('shareResult');
+        if (box) box.innerHTML = `<div class="error">${esc(error.message || 'Chia sẻ thất bại.')}</div>`;
       } finally {
-        submitBtn.disabled = false;
+        setSubmitDisabled(false);
       }
     };
+
     // ===== Hết form "Cấp quyền TKQC" =====
 
     // ===== Form "Change mã TIN" — đổi thông tin thuế của TKQC (billing account info) =====
@@ -1581,6 +1667,10 @@ const personalCurrencyDivisor = account => {
                 <option value="full">Quản lý toàn quyền (Manage + Advertise + Analyze)</option>
                 <option value="analyze">Chỉ xem báo cáo (Analyze)</option>
               </select>
+              <div class="form-grid-2" style="margin-top:8px">
+                <div><label class="form-label" style="margin-top:0">Yêu cầu / batch (1–50)</label><input type="number" id="shareBatchSize" class="form-input" min="1" max="50" value="20"></div>
+                <div><label class="form-label" style="margin-top:0">Nghỉ giữa batch (giây)</label><input type="number" id="shareBatchDelay" class="form-input" min="0" step="0.5" value="3"></div>
+              </div>
               <button id="shareSubmit" class="load-now" type="button" style="margin-top:12px">Chia sẻ</button>
               <div id="shareResult" class="add-user-result"></div>
             </div>`;
