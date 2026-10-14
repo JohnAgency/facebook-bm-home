@@ -1340,7 +1340,7 @@ const personalCurrencyDivisor = account => {
   };
 
   async function checkPersonalAccountsInBatches(loadToken) {
-    const batchSize = 25;
+    const batchSize = 50;
     const concurrency = 2;
     const batches = [];
     for (let offset = 0; offset < personalAccounts.length; offset += batchSize) {
@@ -1392,7 +1392,7 @@ const personalCurrencyDivisor = account => {
     personalNotice.innerHTML = `<div class="loading">Đã hoàn tất kiểm tra ${personalAccounts.length} TKQC.</div>`;
   }
   async function checkPersonalSupplementInBatches(loadToken) {
-    const batchSize = 25;
+    const batchSize = 50;
     const concurrency = 2;
     const batches = [];
     for (let offset = 0; offset < personalAccounts.length; offset += batchSize) batches.push(personalAccounts.slice(offset, offset + batchSize));
